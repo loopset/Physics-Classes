@@ -1,0 +1,19 @@
+# ignore emacs temporary/version files
+*~
+*#
+
+#ignore compile files
+*.d
+*.so
+*.pcm
+*.root
+
+# ignore symbolic links (in all dirs)
+compile_commands.json
+
+#ignore directories
+build/
+old/
+test/
+.cache/
+html/
