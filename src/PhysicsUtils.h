@@ -1,6 +1,10 @@
 #ifndef PhysicsUtils_h
 #define PhysicsUtils_h
 
+#include "TGraph.h"
+#include "TGraphErrors.h"
+#include "TSpline.h"
+
 #include <string>
 namespace PhysicsUtils
 {
@@ -36,6 +40,21 @@ namespace PhysicsUtils
         {}
 
         std::string GetStr() const;
+    };
+
+    class SigmaInterpolator
+    {
+    private:
+        TGraphErrors* fGraph;
+        TGraphErrors* fScaled;//!< Just if we need to scale simulated sigmas against experimental
+        TSpline* fSpe;
+        double fFactor;
+    public:
+        SigmaInterpolator(const std::string& file, const std::string& name = "gsigma");
+
+        void ComputeAndSetScalingFactorInGS(double expsimgags);
+        void SetScalingFactor(double scaling);
+        double EvalSpline(double Ex){return fSpe->Eval(Ex);}
     };
 }
 

@@ -16,6 +16,7 @@
 #include "TFile.h"
 #include "TGraphAsymmErrors.h"
 #include "TCanvas.h"
+#include "TTree.h"
 
 #include <fstream>
 #include <iostream>
@@ -33,6 +34,52 @@ void AngularDistribution::AngularFitter::SetData(double xmin, double xmax, std::
         fData.push_back(Fitters::SpectrumData(xmin, xmax, h));
         fHistos.push_back(h);
     }
+}
+
+void AngularDistribution::AngularFitter::ReadFromFile(const std::string &file, const std::string& treename)
+{
+    auto* f {new TFile(file.c_str())};
+    auto* t {f->Get<TTree>(treename.c_str())};
+    if(!t)
+        throw std::runtime_error("Error! Could not load TTree with InitPars config for AngularFitter");
+    std::string* key {}; std::vector<double>* values {};
+    t->SetBranchAddress("key", &key);
+    t->SetBranchAddress("values", &values);
+    std::cout<<"========================================"<<'\n';
+    std::cout<<"Reading InitPars from file "<<file<<'\n';
+    //Read number of functions
+    int ngaus {}; int nvoigt {};
+    int nps {}; int nctes {};
+    for(int i = 0; i < t->GetEntries(); i++)
+    {
+        t->GetEntry(i);
+        fInitPars[*key] = *values;
+        //debug
+        std::cout<<"Key = "<<*key<<'\n';
+        for(auto& val : *values)
+            std::cout<<"  ->Val = "<<val<<'\n';
+        //Read number of functions
+        TString k {*key};
+        if(k.Contains("g"))
+            ngaus++;
+        else if(k.Contains("v"))
+            nvoigt++;
+        else if(k.Contains("ps"))
+            nps++;
+        else if(k.Contains("cte"))
+            nctes++;
+        else
+            throw std::runtime_error("Received wrong key when reading file -> Check saved keys!");
+    }
+    std::cout<<"----------------------------------------"<<'\n';
+    std::cout<<"Setting function model with parameters..."<<'\n';
+    std::cout<<"NGauss = "<<ngaus<<'\n';
+    std::cout<<"NVoigt = "<<nvoigt<<'\n';
+    std::cout<<"NPS    = "<<nps<<'\n';
+    std::cout<<"NCtes  = "<<nctes<<'\n';
+    std::cout<<"========================================"<<'\n';
+    f->Close(); delete f;
+    SetFuncModel(ngaus, nvoigt, nctes);
 }
 
 void AngularDistribution::AngularFitter::AddPhaseSpace(TH1 *hPS)
@@ -116,13 +163,15 @@ TCanvas* AngularDistribution::AngularFitter::Print(double xmin, double xmax)
         auto fits {plotter.GetIndividualFuncs()};
         TH1F* psfit {};
         if(fData[i].GetNPS())
+        {
             psfit = plotter.GetIndividualPS(0, TString::Format("hPSFitI%dCM%d", 0, i));//just 0 for now
+            // style for PS
+            psfit->SetLineColor(kOrange);
+        }
         //Set styles
         // Global fit
         gfit->SetLineColor(kRed); gfit->SetLineWidth(2);
-        // PS
-        psfit->SetLineColor(kOrange);
-
+        
         //Draw!
         cres->cd(i + 1);
         //Set range
@@ -329,7 +378,7 @@ AngularDistribution::ThetaCMIntervals::ThetaCMIntervals(double min, double max, 
         //Init intervals
         fVals.push_back({theta, theta + step});
         //Init histograms
-        fHistos.push_back(new TH1F(TString::Format("hCM%d", i), TString::Format("#theta_{CM} #in [%.0f, %.0f] #circ;E_{x} [MeV]", theta, theta + step),
+        fHistos.push_back(new TH1F(TString::Format("hCM%d", i), TString::Format("#theta_{CM} #in [%.0f, %.0f) #circ;E_{x} [MeV]", theta, theta + step),
                                    hmodel->GetNbinsX(), hmodel->GetXaxis()->GetXmin(), hmodel->GetXaxis()->GetXmax()));
         //Init angle solid elements
         fOmega.push_back(ComputeAngleSolidElement(theta, theta + step));
@@ -365,6 +414,18 @@ double AngularDistribution::ThetaCMIntervals::GetIntervalCentre(int idx)
     return (fVals.at(idx).second + fVals.at(idx).first) / 2;
 }
 
+TCanvas* AngularDistribution::ThetaCMIntervals::Draw()
+{
+    auto* civs {new TCanvas("civs", "Intervals canvas")};
+    civs->DivideSquare(fHistos.size());
+    for(int h = 0; h < fHistos.size(); h++)
+    {
+        civs->cd(h + 1);
+        fHistos[h]->Draw();
+    }
+    return civs;
+}
+
 AngularDistribution::DiffCrossSection::DiffCrossSection(const std::string& peak, AngularFitter& ang,
                                                         ThetaCMIntervals& ivs,
                                                         Efficiency& eff,
@@ -383,7 +444,8 @@ void AngularDistribution::DiffCrossSection::PerformCalculation(const std::string
     auto N {ang.GetIntegralsForPeak(peak)};
     //Init TGraphErrors
     fxs = new TGraphErrors();
-    fxs->SetTitle("Angular distributions;#theta_{CM} [degree];#frac{d#sigma}{d#Omega} [mb/sr]");
+    fxs->SetName(TString::Format("gang%s", peak.c_str()));
+    fxs->SetTitle(TString::Format("xs for %s state;#theta_{CM} [#circ];#frac{d#sigma}{d#Omega} [mb/sr]", peak.c_str()));
     for(int i = 0; i < N.size(); i++)
     {
         //1->Solid angle element
@@ -411,6 +473,8 @@ void AngularDistribution::DiffCrossSection::PerformCalculation(const std::string
         fxs->SetPoint(fxs->GetN(), centre, xs);
         fxs->SetPointError(fxs->GetN() - 1, 0, uncertainty);
     }
+    //Set basic style for graph
+    fxs->SetLineWidth(2);
 }
 
 double AngularDistribution::DiffCrossSection::UncertaintyXS(double N, double Nt, double Nb, double Omega, double epsilon,

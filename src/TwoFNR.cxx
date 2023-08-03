@@ -213,17 +213,19 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
     leg->SetBorderSize(0);
     leg->SetFillStyle(0);
     //Experimental
-    mg->Add(gexp);
-    leg->AddEntry(gexp, "\\mathrm{Exp.}", "lpe");
+    mg->Add(gexp, "pe");
+    leg->AddEntry(gexp, "\\mathrm{Exp.}", "pe");
     //Fitted
+    int idx {1};
     for(auto& [key, fit] : fFits)
     {
         //Clone to avoid interferences with Draw() functions
         auto* clone {(TGraphErrors*)fit->Clone()};
-        clone->SetLineWidth(2);
-        clone->SetLineStyle(1);
+        clone->SetLineWidth(3);
+        clone->SetLineStyle(idx);
         leg->AddEntry(clone, key.c_str(), "l");
         mg->Add(clone, "l");
+        idx++;
     }
     //Draw
     cret->cd();

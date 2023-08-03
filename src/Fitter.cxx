@@ -5,6 +5,7 @@
 
 #include "Fit/FitResult.h"
 #include "TF1.h"
+#include "TFile.h"
 #include "TFitResult.h"
 #include "TGraph.h"
 #include "TGraphErrors.h"
@@ -12,6 +13,7 @@
 #include "TH1.h"
 #include "TString.h"
 #include "TRegexp.h"
+#include "TTree.h"
 
 #include <algorithm>
 #include <cmath>
@@ -507,6 +509,57 @@ bool Fitters::SpectrumFitter::CompareDoubles(double a, double b, double tol)
     const auto greatedMagnitude {std::max(std::abs(a), std::abs(b))};
     bool comp {std::abs(a - b) < tol * greatedMagnitude};
     return comp;
+}
+
+void Fitters::SpectrumFitter::WriteToFile(const std::string &file)
+{
+    //Create map to save
+    InitPars ret;
+    //Types dont match: pack stores keys as ints (since the different funcs maps are vector elements)
+    //But init pars needs everything in a sole map
+    auto pack {fFunc->UnpackCParameters(fFitResult.GetParams())};
+    auto gaus = pack[0]; auto voigt = pack[1];
+    auto phase = pack[2]; auto cte = pack[3];
+    //Gauss
+    for(const auto& [i, pars] : gaus)
+    {
+        std::string key {"g" + std::to_string(i)};
+        ret[key] = pars;
+    }
+    //Voigt
+    for(const auto& [i, pars] : voigt)
+    {
+        std::string key {"v" + std::to_string(i)};
+        ret[key] = pars;
+    }
+    //Phase space
+    for(const auto& [i, pars] : phase)
+    {
+        std::string key {"ps" + std::to_string(i)};
+        ret[key] = pars;
+    }
+    //Cte
+    for(const auto& [i, pars] : cte)
+    {
+        std::string key {"cte" + std::to_string(i)};
+        ret[key] = pars;
+    }
+    //Write
+    auto* f {new TFile(file.c_str(), "recreate")};
+    //Use TTree to avoid requiring dictionary for std collection
+    auto* t {new TTree("InitPars", "FitResults in a fashion that is understandable by our classes")};
+    std::string key {};
+    t->Branch("key", &key);
+    std::vector<double> values {};
+    t->Branch("values", &values);
+    for(auto& [k, v] : ret)
+    {
+        key = k;
+        values = v;
+        t->Fill();
+    }
+    t->Write();
+    f->Close(); delete f;
 }
 
 Fitters::SpectrumPlotter::SpectrumPlotter(Fitters::SpectrumData* data, Fitters::SpectrumFunction* func, ROOT::Fit::FitResult res)

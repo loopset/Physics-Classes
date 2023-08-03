@@ -149,6 +149,8 @@ namespace Fitters
         //Getters
         ROOT::Fit::FitResult GetFitResult() const {return fFitResult;}
         const double* GetFitParameters() const {return fFitResult.GetParams();}
+        //Write results to file
+        void WriteToFile(const std::string& file);
     private:
         void InitCParameters(double* pars);
         std::pair<int, int> LocatePars(const std::string& key);

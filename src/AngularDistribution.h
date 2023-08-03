@@ -34,6 +34,7 @@ namespace AngularDistribution
         std::vector<std::unordered_map<std::string, double>> fIntegrals;
     public:
         //Setters
+        void ReadFromFile(const std::string& file, const std::string& treename = "InitPars");
         void SetData(double xmin, double xmax, std::vector<TH1F*> hEx);
         void AddPhaseSpace(TH1* hPS);
         void SetFuncModel(int ngaus, int nvoigt, bool cte);
@@ -99,7 +100,7 @@ namespace AngularDistribution
         std::vector<double> GetOmegas() const {return fOmega;}
         double GetIntervalCentre(int idx);
         int GetSize() const {return fVals.size();}
-        
+        TCanvas* Draw();
     private:
         double ComputeAngleSolidElement(double min, double max);
                 
