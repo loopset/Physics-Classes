@@ -35,8 +35,10 @@ namespace TheoreticalUtils
         TGraph* GetAsymmetry(const std::string& name) const {return fAsym.at(name);}
         TGraphErrors* GetFitted(const std::string& name) const {return fFits.at(name);}
         void FitToExperimental(TGraphErrors* gexp, double xmin = 0, double xmax = 0);
+        double Integral(const std::string& key, double thetamin, double thetamax);
+        void IntegralAll(double thetamin, double thetamax, double exp = -1);
         //Draw
-        void DrawTheoretical();
+        void DrawTheoretical(const std::string& opts = "");
         void DrawFitted();
         TLegend* DrawLegend(bool fancy = false);
         TCanvas* GetCanvas(TGraphErrors* gexp, bool asym = false);

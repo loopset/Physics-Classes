@@ -80,14 +80,45 @@ void TheoreticalUtils::TwoFNR::FitToExperimental(TGraphErrors *gexp, double xmin
     }
 }
 
-void TheoreticalUtils::TwoFNR::DrawTheoretical()
+double TheoreticalUtils::TwoFNR::Integral(const std::string& key, double thetamin, double thetamax)
+{
+    //Build TF1
+    auto* spline {new TSpline3("spline", (TGraph*)fTheo.at(key), "b2,e2", 0, 0)};
+    auto* func {new TF1("func", [&](double* x, double* p){return spline->Eval(x[0]);}, 0, 180, 1)};
+    double ret {func->Integral(thetamin, thetamax)};
+    //deletes
+    delete func;
+    delete spline;
+    //return and exit
+    return ret;
+}
+
+void TheoreticalUtils::TwoFNR::IntegralAll(double thetamin, double thetamax, double exp)
+{
+    std::cout<<"++++++ TwoFNR abs xs computation"<<" ++++++"<<'\n';
+    for(const auto& key : fKeys)
+    {
+        auto res {Integral(key, thetamin, thetamax)};
+        std::cout<<"Key = "<<key<<" Theo = "<<res<<" mb"<<'\n';
+        if(exp > 0)
+            std::cout<<"--> Ratio to exp aka C2S = "<<exp / res<<'\n';
+    }
+    std::cout<<"+++++++++++++++++++++++++++++++++"<<'\n';
+}
+
+void TheoreticalUtils::TwoFNR::DrawTheoretical(const std::string& opts)
 {
     int idx {24};//for marker style
     for(auto& [key, g] : fTheo)
     {
         g->SetLineWidth(2);
-        g->SetMarkerStyle(idx);
-        g->Draw("pl plc pmc same");
+        g->SetMarkerStyle(0);
+        if(opts.length() == 0)
+            g->Draw("pl plc pmc same");
+        else if(idx == 24)
+            g->Draw(opts.c_str());
+        else
+            g->Draw((opts + " same").c_str());
         idx++;
     }
     //Fill colors
@@ -112,7 +143,7 @@ void TheoreticalUtils::TwoFNR::DrawFitted()
         }
         else
         {
-            g->SetMarkerStyle(idx);
+            g->SetMarkerStyle(0);
             g->Draw("pl plc pmc same");
         }
         idx++;
@@ -124,8 +155,9 @@ TLegend* TheoreticalUtils::TwoFNR::DrawLegend(bool fancy)
     auto* leg {new TLegend(0.4, 0.2)};
     leg->SetBorderSize(0);
     leg->SetFillStyle(0);
-    leg->SetTextSize(0.04);
+    leg->SetTextSize(0.035);
     leg->SetNColumns(2);
+    leg->SetColumnSeparation(0.25);
     //Add entries
     for(const auto& key : fKeys)
     {
@@ -138,7 +170,7 @@ TLegend* TheoreticalUtils::TwoFNR::DrawLegend(bool fancy)
             if(fancy)
                 name = TString::Format("C^{2}S(%s) = %.3f \\pm %.3f", key.c_str(), fPar[key].first, fPar[key].second);
             else
-                name = TString::Format("(%s) \\times %.2f", key.c_str(), fPar[key].first);
+                name = TString::Format("(%s) #times %.2f", key.c_str(), fPar[key].first);
             leg->AddEntry(fFits[key], name, "lp");
         }
         else

@@ -9,6 +9,7 @@
 #include "TEfficiency.h"
 #include "TGraph.h"
 #include "TGraphErrors.h"
+#include "TH1.h"
 #include "TMath.h"
 #include "TMultiGraph.h"
 #include "TSpline.h"
@@ -17,13 +18,16 @@
 #include "TGraphAsymmErrors.h"
 #include "TCanvas.h"
 #include "TTree.h"
+#include "TROOT.h"
 
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 void AngularDistribution::AngularFitter::SetData(double xmin, double xmax, std::vector<TH1F*> hEx)
@@ -153,7 +157,9 @@ Fitters::SpectrumFitter::FixedPars AngularDistribution::AngularFitter::GetFixedP
 
 TCanvas* AngularDistribution::AngularFitter::Print(double xmin, double xmax)
 {
-    auto* cres {new TCanvas("cres", "Angular distributions")};
+    static int count {0};
+    auto* cres {new TCanvas(TString::Format("cres%d", count), "Angular distributions")};
+    count++;
     cres->DivideSquare(fData.size());
     for(int i = 0; i < fData.size(); i++)
     {
@@ -378,12 +384,24 @@ AngularDistribution::ThetaCMIntervals::ThetaCMIntervals(double min, double max, 
         //Init intervals
         fVals.push_back({theta, theta + step});
         //Init histograms
-        fHistos.push_back(new TH1F(TString::Format("hCM%d", i), TString::Format("#theta_{CM} #in [%.0f, %.0f) #circ;E_{x} [MeV]", theta, theta + step),
+        fHistos.push_back(new TH1F(TString::Format("hCM%d", i), TString::Format("#theta_{CM} #in [%.0f, %.0f) #circ;%s;%s", theta, theta + step,
+                                                                                hmodel->GetXaxis()->GetTitle(), hmodel->GetYaxis()->GetTitle()),
                                    hmodel->GetNbinsX(), hmodel->GetXaxis()->GetXmin(), hmodel->GetXaxis()->GetXmax()));
         //Init angle solid elements
         fOmega.push_back(ComputeAngleSolidElement(theta, theta + step));
         i++;
     }
+}
+
+AngularDistribution::ThetaCMIntervals::ThetaCMIntervals(double min, double max, TH1F* hmodel)
+{
+    //Interval
+    fVals.push_back({min, max});
+    //Histogram
+    fHistos.push_back(new TH1F("hCMAbs", TString::Format("#theta_{CM} #in [%.0f, %.0f) #circ;E_{x} [MeV]", fVals.front().first, fVals.front().second),
+                               hmodel->GetNbinsX(), hmodel->GetXaxis()->GetXmin(), hmodel->GetXaxis()->GetXmax()));
+    //Solid angle
+    fOmega.push_back(ComputeAngleSolidElement(fVals.front().first, fVals.front().second));
 }
 
 void AngularDistribution::ThetaCMIntervals::Fill(double thetaCM, double Ex)
@@ -402,6 +420,13 @@ void AngularDistribution::ThetaCMIntervals::Fill(double thetaCM, double Ex)
 void AngularDistribution::ThetaCMIntervals::FillHisto(int idx, double val)
 {
     fHistos.at(idx)->Fill(val);
+}
+
+void AngularDistribution::ThetaCMIntervals::FillFromDF(std::vector<ROOT::RDF::RNode> dfs)
+{
+    auto fill = [this](const std::pair<double, double>& res){this->Fill(res.second, res.first);};
+    for(auto& df : dfs)
+        df.Foreach(fill, {"Results"});
 }
 
 double AngularDistribution::ThetaCMIntervals::ComputeAngleSolidElement(double min, double max)
@@ -451,7 +476,9 @@ void AngularDistribution::DiffCrossSection::PerformCalculation(const std::string
         //1->Solid angle element
         auto Omega {ivs.GetOmega(i)};
         //2->Efficiency calculation
-        auto epsilon {eff.GetAveragedEff(ivs.GetInterval(i).first, ivs.GetInterval(i).second)};
+        double epsilon {eff.GetAveragedEff(ivs.GetInterval(i).first, ivs.GetInterval(i).second)};
+        if(!std::isfinite(epsilon))//fallback to point uncertainty when step mean cannot be computed
+            epsilon = eff.GetPointEff(ivs.GetIntervalCentre(i));
         //3->Compute differential cross section!
         auto xs {N[i] / (exp.GetNt() * exp.GetNb() * Omega * epsilon)};
         //4->Convert to mb / sr units
@@ -497,6 +524,56 @@ double AngularDistribution::DiffCrossSection::UncertaintyXS(double N, double Nt,
     //Convert to mb units
     sum *= 1e27;
     return sum;
+}
+
+AngularDistribution::AbsCrossSection::AbsCrossSection(double thetamin, double thetamax,
+                                                      std::vector<ROOT::RDF::RNode> dfs,
+                                                      TH1F* hmodel)
+    : fRange({thetamin, thetamax}), fIvs(ThetaCMIntervals(thetamin, thetamax, hmodel))
+{
+    //Fill ivs
+    fIvs.FillFromDF(dfs);
+}
+
+void AngularDistribution::AbsCrossSection::SetRunFitter(double xmin, double xmax, const std::string& reffile, TH1* hPS)
+{
+    //Set data
+    fFitter.SetData(xmin, xmax, fIvs.GetHistos());
+    if(hPS)
+        fFitter.AddPhaseSpace(hPS);
+    fFitter.ReadFromFile(reffile);
+    //Run!
+    fFitter.Run();
+    fFitter.ComputeYield();
+}
+
+double AngularDistribution::AbsCrossSection::PerformCalculation(const std::string &peak, Efficiency &eff, PhysicsUtils::ExperimentInfo &exp)
+{
+    //Abs xs only has one iteration in AngularFitter
+    auto N {fFitter.GetIntegralsForPeak(peak).front()};
+    auto Omega {fIvs.GetOmegas().front()};
+    //Epsilon is averaged over the full interval!!
+    auto epsilon {eff.GetAveragedEff(fRange.first, fRange.second)};
+    auto res {N / (exp.GetNb() * exp.GetNt() * Omega * epsilon)};
+    //To mb / sr
+    res *= 1e27;
+    //Compute
+
+    std::cout<<"...... Absolute xs for peak "<< peak<<" ......"<<'\n';
+    std::cout<<"N       = "<<N<<'\n';
+    std::cout<<"Nt      = "<<exp.GetNt()<<'\n';
+    std::cout<<"Nb      = "<<exp.GetNb()<<'\n';
+    std::cout<<"Omega   = "<<Omega<<'\n';
+    std::cout<<"epsilon = "<<epsilon<<'\n';
+    std::cout<<"Abs xs  =  "<<res<<" mb"<<'\n';
+    std::cout<<".............................................."<<'\n';
+
+    return res;
+}
+
+TCanvas* AngularDistribution::AbsCrossSection::Draw(double xmin, double xmax)
+{
+    return fFitter.Print(xmin, xmax);
 }
 
 TMultiGraph* AngularDistribution::CompareMethods(AngularFitter& ang, const std::string& peak,

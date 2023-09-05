@@ -3,6 +3,7 @@
 
 #include "Fit/FitResult.h"
 #include "Fitter.h"
+#include "ROOT/RDF/InterfaceUtils.hxx"
 #include "TCanvas.h"
 #include "TGraph.h"
 #include "TGraphAsymmErrors.h"
@@ -13,6 +14,7 @@
 #include "TEfficiency.h"
 #include "TSpline.h"
 #include "TMultiGraph.h"
+#include "ROOT/RDataFrame.hxx"
 
 #include "PhysicsUtils.h"
 
@@ -86,11 +88,14 @@ namespace AngularDistribution
         std::vector<double> fOmega;
         
     public:
+        //For differential xs computation
         ThetaCMIntervals(double min, double max, double step, TH1F* hmodel);
-
+        //For absolute xs computation
+        ThetaCMIntervals(double min, double max, TH1F* hmodel);
         //Setters and fillers
         void Fill(double thetaCM, double Ex);
         void FillHisto(int idx, double val);
+        void FillFromDF(std::vector<ROOT::RDF::RNode> dfs);
         //Getters
         std::pair<double, double> GetInterval(int idx) const {return fVals.at(idx);}
         TH1F* GetHisto(int idx) const {return fHistos.at(idx);}
@@ -128,6 +133,19 @@ namespace AngularDistribution
                              double thetaCMcentre, Efficiency& eff, PhysicsUtils::ExperimentInfo& exp);
     };
 
+    class AbsCrossSection
+    {
+    private:
+        std::pair<double, double> fRange;
+        ThetaCMIntervals fIvs;
+        AngularFitter fFitter;
+    public:
+        AbsCrossSection(double thetamin, double thetamax,
+                        std::vector<ROOT::RDF::RNode> dfs, TH1F* hmodel);
+        void SetRunFitter(double xmin, double xmax, const std::string& reffile, TH1* hPS = nullptr);
+        double PerformCalculation(const std::string& peak, Efficiency& eff, PhysicsUtils::ExperimentInfo& exp);
+        TCanvas* Draw(double xmin, double xmax);
+    };
     TMultiGraph* CompareMethods(AngularFitter& ang, const std::string& peak,
                                 ThetaCMIntervals& ivs, Efficiency& eff, PhysicsUtils::ExperimentInfo& exp);
 }
