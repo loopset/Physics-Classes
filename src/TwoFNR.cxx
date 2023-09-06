@@ -7,6 +7,7 @@
 #include "TGraph.h"
 #include "TGraphErrors.h"
 #include "TLegend.h"
+#include "TMath.h"
 #include "TSpline.h"
 #include "TString.h"
 #include "TMultiGraph.h"
@@ -17,6 +18,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 TheoreticalUtils::TwoFNR::TwoFNR(const std::string& name, const std::string& file)
 {
@@ -55,8 +57,9 @@ void TheoreticalUtils::TwoFNR::Add(const std::string &name, const std::string &f
 
 void TheoreticalUtils::TwoFNR::FitToExperimental(TGraphErrors *gexp, double xmin, double xmax)
 {
-    for(auto& [key, g] : fTheo)
+    for(const auto& key : fKeys)
     {
+        const auto& g {fTheo[key]};
         auto* sptheo {new TSpline3("sptheo", (TGraph*)g, "b2,e2", 0, 0)};
         auto* f1 {new TF1("fittheo", [&](double* x, double* p){return p[0] * sptheo->Eval(x[0]);}, 0, 180, 1)};
         f1->SetParameters(1);
@@ -82,13 +85,37 @@ void TheoreticalUtils::TwoFNR::FitToExperimental(TGraphErrors *gexp, double xmin
 
 double TheoreticalUtils::TwoFNR::Integral(const std::string& key, double thetamin, double thetamax)
 {
+    double ret {};
+    auto* g {new TGraph};
+    for(int p = 0; p < fTheo.at(key)->GetN(); p++)
+    {
+        //Convert deg to rad in X axis of function
+        auto x {fTheo[key]->GetPointX(p) * TMath::DegToRad()};
+        auto y {fTheo[key]->GetPointY(p)};
+        g->SetPoint(p, x, y);
+    }
+    // //To check that ROOT integration works
+    // for(int p = 0; p < g->GetN(); p++)
+    // {
+    //     auto x {g->GetPointX(p)}; auto y {g->GetPointY(p)};
+    //     if(x >= thetamin * TMath::DegToRad() && x < thetamax * TMath::DegToRad())
+    //     {
+    //         ret += TMath::TwoPi() * y * TMath::Sin(x) * 1 * TMath::DegToRad();
+    //     }
+    // }
     //Build TF1
-    auto* spline {new TSpline3("spline", (TGraph*)fTheo.at(key), "b2,e2", 0, 0)};
-    auto* func {new TF1("func", [&](double* x, double* p){return spline->Eval(x[0]);}, 0, 180, 1)};
-    double ret {func->Integral(thetamin, thetamax)};
+    auto* spline {new TSpline3("spline", g, "b2,e2", 0, 0)};
+    auto* func {new TF1("func", [&](double* x, double* p)
+    {
+        //One needs to take into account the solid angle element
+        return TMath::TwoPi() * spline->Eval(x[0]) * TMath::Sin(x[0]);
+    },
+            0, TMath::TwoPi(), 1)};
+    ret = func->Integral(thetamin * TMath::DegToRad(), thetamax * TMath::DegToRad());
     //deletes
     delete func;
     delete spline;
+    delete g;
     //return and exit
     return ret;
 }
@@ -234,7 +261,7 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvas(TGraphErrors *gexp, bool asym)
     return cret;
 }
 
-TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, double xmin, double xmax)
+TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, double xmin, double xmax, const std::vector<int>& ls)
 {
     auto* cret {new TCanvas("cFNRPub", "TwoFNR canvas for publication")};
     //create multigraphs
@@ -249,16 +276,30 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
     leg->AddEntry(gexp, "\\mathrm{Exp.}", "pe");
     //Fitted
     int idx {1};
-    for(auto& [key, fit] : fFits)
+    for(const auto& key : fKeys)
     {
         //Clone to avoid interferences with Draw() functions
-        auto* clone {(TGraphErrors*)fit->Clone()};
+        auto* clone {(TGraphErrors*)fFits[key]->Clone()};
         clone->SetLineWidth(3);
-        clone->SetLineStyle(idx);
-        leg->AddEntry(clone, key.c_str(), "l");
+        if(ls.size() > 0)
+        {
+            if(ls.size() != fKeys.size())
+            {
+                std::cout<<"Warning: Defaulting to automatic line style since size of specified ls does not match database!"<<'\n';
+                clone->SetLineStyle(idx);
+            }
+            else
+                clone->SetLineStyle(ls[idx - 1]);
+        }
+        else
+            clone->SetLineStyle(idx);
         mg->Add(clone, "l");
+        //Append to legend
+        leg->AddEntry(clone, key.c_str(), "l");
         idx++;
     }
+    //Draw legend in desidered or automatic order
+    
     //Draw
     cret->cd();
     mg->Draw("apl plc pmc");

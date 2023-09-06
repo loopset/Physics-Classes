@@ -551,19 +551,21 @@ double AngularDistribution::AbsCrossSection::PerformCalculation(const std::strin
 {
     //Abs xs only has one iteration in AngularFitter
     auto N {fFitter.GetIntegralsForPeak(peak).front()};
-    auto Omega {fIvs.GetOmegas().front()};
+    auto Omega {1};//{fIvs.GetOmegas().front()};
     //Epsilon is averaged over the full interval!!
     auto epsilon {eff.GetAveragedEff(fRange.first, fRange.second)};
     auto res {N / (exp.GetNb() * exp.GetNt() * Omega * epsilon)};
     //To mb / sr
     res *= 1e27;
-    //Compute
-
+    //Print
     std::cout<<"...... Absolute xs for peak "<< peak<<" ......"<<'\n';
     std::cout<<"N       = "<<N<<'\n';
     std::cout<<"Nt      = "<<exp.GetNt()<<'\n';
     std::cout<<"Nb      = "<<exp.GetNb()<<'\n';
-    std::cout<<"Omega   = "<<Omega<<'\n';
+    if(Omega == 1)
+        std::cout<<"Omega   = "<<"not applying"<<'\n';
+    else
+        std::cout<<"Omega   = "<<Omega<<'\n';
     std::cout<<"epsilon = "<<epsilon<<'\n';
     std::cout<<"Abs xs  =  "<<res<<" mb"<<'\n';
     std::cout<<".............................................."<<'\n';

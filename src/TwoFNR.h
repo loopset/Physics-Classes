@@ -42,7 +42,7 @@ namespace TheoreticalUtils
         void DrawFitted();
         TLegend* DrawLegend(bool fancy = false);
         TCanvas* GetCanvas(TGraphErrors* gexp, bool asym = false);
-        TCanvas* GetCanvasPublication(TGraphErrors* gexp, double xmin = -1, double xmax = -1);
+        TCanvas* GetCanvasPublication(TGraphErrors* gexp, double xmin = -1, double xmax = -1, const std::vector<int>& ls = {});
         
     private:
         TGraphErrors* ReadDiffXS(const std::string& file);
