@@ -261,9 +261,11 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvas(TGraphErrors *gexp, bool asym)
     return cret;
 }
 
-TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, double xmin, double xmax, const std::vector<int>& ls)
+TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, double xmin, double xmax, const std::vector<int>& ls, bool sf)
 {
-    auto* cret {new TCanvas("cFNRPub", "TwoFNR canvas for publication")};
+    static int cpubcounter {0};
+    auto* cret {new TCanvas(TString::Format("cPub%d", cpubcounter), "TwoFNR canvas for publication")};
+    cpubcounter++;
     //create multigraphs
     auto* mg {new TMultiGraph()};
     mg->SetTitle(";#theta_{CM} [#circ];#frac{d#sigma}{d#Omega} [mb/sr]");
@@ -295,7 +297,12 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
             clone->SetLineStyle(idx);
         mg->Add(clone, "l");
         //Append to legend
-        leg->AddEntry(clone, key.c_str(), "l");
+        TString entry;
+        if(sf)
+            entry = TString::Format("\\mathit{%s} \\Rightarrow %.2f", key.c_str(), fPar[key].first);
+        else
+            entry = key;
+        leg->AddEntry(clone, entry, "l");
         idx++;
     }
     //Draw legend in desidered or automatic order
