@@ -20,11 +20,6 @@
 #include <string>
 #include <vector>
 
-TheoreticalUtils::TwoFNR::TwoFNR(const std::string& name, const std::string& file)
-{
-    Add(name, file);
-}
-
 TGraphErrors* TheoreticalUtils::TwoFNR::ReadDiffXS(const std::string& file)
 {
     auto g = new TGraphErrors(file.c_str(), "%lg %lg");
@@ -70,7 +65,7 @@ void TheoreticalUtils::TwoFNR::FitToExperimental(TGraphErrors *gexp, double xmin
             fFits[key]->SetPoint(p, g->GetPointX(p), g->GetPointY(p) * f1->GetParameter(0));
         fFits[key]->SetTitle(TString::Format("Fitted to exp. from %s", key.c_str()));
         //Store fit parameter
-        fPar[key] = {f1->GetParameter(0), f1->GetParError(0)};
+        fSF[key] = {f1->GetParameter(0), f1->GetParError(0)};
         //Print
         std::cout<<"============================"<<'\n';
         std::cout<<"-- Fit for "<<key<<'\n';
@@ -120,15 +115,18 @@ double TheoreticalUtils::TwoFNR::Integral(const std::string& key, double thetami
     return ret;
 }
 
-void TheoreticalUtils::TwoFNR::IntegralAll(double thetamin, double thetamax, double exp)
+void TheoreticalUtils::TwoFNR::IntegralAll(double thetamin, double thetamax, double exp, double uexp)
 {
-    std::cout<<"++++++ TwoFNR abs xs computation"<<" ++++++"<<'\n';
+    std::cout<<"++++++++ TwoFNR abs xs computation "<<fName<<" ++++++++"<<'\n';
     for(const auto& key : fKeys)
     {
         auto res {Integral(key, thetamin, thetamax)};
-        std::cout<<"Key = "<<key<<" Theo = "<<res<<" mb"<<'\n';
+        std::cout<<"Key = "<<key<<", integral = "<<res<<" mb"<<'\n';
+        double ures {};
+        if(uexp > 0)
+            ures = 1. / res * uexp;
         if(exp > 0)
-            std::cout<<"--> Ratio to exp aka C2S = "<<exp / res<<'\n';
+            std::cout<<"  Ratio to exp: C2S = "<<exp / res<<" +/- "<<ures<<'\n';
     }
     std::cout<<"+++++++++++++++++++++++++++++++++"<<'\n';
 }
@@ -191,13 +189,13 @@ TLegend* TheoreticalUtils::TwoFNR::DrawLegend(bool fancy)
         //Theoretical
         leg->AddEntry(fTheo[key], key.c_str(), "lp");
         //Fitted
-        if(fPar.count(key))
+        if(fSF.count(key))
         {
             TString name {};
             if(fancy)
-                name = TString::Format("C^{2}S(%s) = %.3f \\pm %.3f", key.c_str(), fPar[key].first, fPar[key].second);
+                name = TString::Format("C^{2}S(%s) = %.3f \\pm %.3f", key.c_str(), fSF[key].first, fSF[key].second);
             else
-                name = TString::Format("(%s) #times %.2f", key.c_str(), fPar[key].first);
+                name = TString::Format("(%s) #times %.2f", key.c_str(), fSF[key].first);
             leg->AddEntry(fFits[key], name, "lp");
         }
         else
@@ -206,53 +204,51 @@ TLegend* TheoreticalUtils::TwoFNR::DrawLegend(bool fancy)
     return leg;
 }
 
-TCanvas* TheoreticalUtils::TwoFNR::GetCanvas(TGraphErrors *gexp, bool asym)
+TCanvas* TheoreticalUtils::TwoFNR::GetCanvas(TGraphErrors *gexp, double xmin, double xmax, bool asym)
 {
-    auto* cret {new TCanvas("cFNR", "TwoFNR canvas")};
+    static int counterfnr {0};
+    auto* cret {new TCanvas(TString::Format("cTheo%d", counterfnr), "TwoFNR canvas")};
+    counterfnr++;
     cret->DivideSquare(1 + asym);
     //create multigraphs
     auto* mg {new TMultiGraph()};
-    mg->SetTitle(";#theta_{CM} [#circ];#frac{d#sigma}{d#Omega} [mb/sr]");
+    mg->SetTitle(TString::Format("%s;#theta_{CM} [#circ];#frac{d#sigma}{d#Omega} [mb/sr]", (fName.length() > 0) ? fName.c_str() : ""));
     auto* mas {new TMultiGraph()};
     mas->SetTitle(";#theta_{CM} [#circ];Asymmetry");
+    //Legend
+    auto* leg {new TLegend(0.3, 0.3)};
+    leg->SetBorderSize(0);
+    leg->SetFillStyle(0);
     //Experimental
-    gexp->SetLineWidth(2);
-    gexp->SetLineStyle(1);
-    gexp->SetMarkerStyle(24);
-    mg->Add(gexp);
+    if(gexp)
+    {
+        mg->Add(gexp);
+        leg->AddEntry(gexp, "\\mathrm{Exp.}", "pe");
+    }
     //Theoretical
-    int idx {25};//for marker style
     for(auto& [key, theo] : fTheo)
     {
         theo->SetLineWidth(2);
-        theo->SetMarkerStyle(idx);
-        theo->SetLineStyle(2);
-        mg->Add(theo);
-        idx++;
-    }
-    //Fitted
-    idx = 25;
-    for(auto& [key, fit] : fFits)
-    {
-        fit->SetLineWidth(2);
-        fit->SetMarkerStyle(idx);
-        fit->SetLineStyle(4);
-        mg->Add(fit);
-        idx++;
+        theo->SetLineStyle(1);
+        mg->Add(theo, "c");
+        leg->AddEntry(theo, key.c_str(), "l");
     }
     //Asymmetry
-    idx = 25;
     for(auto& [key, as] : fAsym)
     {
         as->SetLineWidth(2);
-        as->SetMarkerStyle(idx);
         as->SetLineStyle(7);
         mas->Add(as);
-        idx++;
     }
     //Draw
     cret->cd(1);
-    mg->Draw("apl plc pmc");
+    mg->Draw("apc plc pmc");
+    leg->Draw();
+    if(xmin != -1 && xmax != -1)
+        mg->GetXaxis()->SetLimits(xmin, xmax);
+    cret->cd(1)->Modified();
+    cret->cd(1)->Update();
+    
     if(asym)
     {
         cret->cd(2);
@@ -268,14 +264,17 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
     cpubcounter++;
     //create multigraphs
     auto* mg {new TMultiGraph()};
-    mg->SetTitle(";#theta_{CM} [#circ];#frac{d#sigma}{d#Omega} [mb/sr]");
+    mg->SetTitle(TString::Format("%s;#theta_{CM} [#circ];#frac{d#sigma}{d#Omega} [mb/sr]", (fName.length() > 0) ? fName.c_str() : ""));
     //Legend
     auto* leg {new TLegend(0.3, 0.3)};
     leg->SetBorderSize(0);
     leg->SetFillStyle(0);
     //Experimental
-    mg->Add(gexp, "pe");
-    leg->AddEntry(gexp, "\\mathrm{Exp.}", "pe");
+    if(gexp)
+    {
+        mg->Add(gexp, "pe");
+        leg->AddEntry(gexp, "\\mathrm{Exp.}", "pe");
+    }
     //Fitted
     int idx {1};
     for(const auto& key : fKeys)
@@ -295,11 +294,11 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
         }
         else
             clone->SetLineStyle(idx);
-        mg->Add(clone, "l");
+        mg->Add(clone, "c");//c line to smooth the angular intervals from the theoretical files
         //Append to legend
         TString entry;
         if(sf)
-            entry = TString::Format("\\mathit{%s} \\Rightarrow %.2f", key.c_str(), fPar[key].first);
+            entry = TString::Format("\\mathit{%s} \\Rightarrow %.2f", key.c_str(), fSF[key].first);
         else
             entry = key;
         leg->AddEntry(clone, entry, "l");
@@ -309,7 +308,7 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
     
     //Draw
     cret->cd();
-    mg->Draw("apl plc pmc");
+    mg->Draw("apc plc pmc");
     if(xmin != -1 && xmax != -1)
         mg->GetXaxis()->SetLimits(xmin, xmax);
     leg->Draw();

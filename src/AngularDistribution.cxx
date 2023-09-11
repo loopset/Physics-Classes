@@ -547,6 +547,29 @@ void AngularDistribution::AbsCrossSection::SetRunFitter(double xmin, double xmax
     fFitter.ComputeYield();
 }
 
+double AngularDistribution::AbsCrossSection::UncertaintyAbsXS(double N, double epsilon, double uepsilon,
+                                                              PhysicsUtils::ExperimentInfo& exp)
+{
+    double Omega {1};//we do not divide by Omega here, but we keep the parameter just in case
+    //1-> Uncertainty in N
+    double coeffN {1. / (exp.GetNt() * exp.GetNb() * Omega * epsilon)};
+    double uN {TMath::Sqrt(N)};
+    //2-> Uncertainty in Nb
+    double coeffNb {- N / (exp.GetNt() * Omega * epsilon) / TMath::Power(exp.GetNb(), 2)};
+    double uNb {exp.GetUNb()};
+    //3-> Uncertainty in epsilon
+    double coeffEpsilon {- N / (exp.GetNt() * exp.GetNb() * Omega) / TMath::Power(epsilon, 2)};
+    double uEpsilon {0};//I still do not know how to compute the uncertainty of the mean efficiency...
+
+    //Add everything
+    double sum {TMath::Sqrt(coeffN * coeffN * uN * uN +
+                            coeffNb * coeffNb * uNb * uNb +
+                            coeffEpsilon * coeffEpsilon * uEpsilon * uEpsilon)};
+    //Convert to mb units
+    sum *= 1e27;
+    return sum;
+}
+
 double AngularDistribution::AbsCrossSection::PerformCalculation(const std::string &peak, Efficiency &eff, PhysicsUtils::ExperimentInfo &exp)
 {
     //Abs xs only has one iteration in AngularFitter
@@ -555,6 +578,8 @@ double AngularDistribution::AbsCrossSection::PerformCalculation(const std::strin
     //Epsilon is averaged over the full interval!!
     auto epsilon {eff.GetAveragedEff(fRange.first, fRange.second)};
     auto res {N / (exp.GetNb() * exp.GetNt() * Omega * epsilon)};
+    //Uncertainty
+    auto ures {UncertaintyAbsXS(N, epsilon, 0, exp)};
     //To mb / sr
     res *= 1e27;
     //Print
@@ -567,9 +592,12 @@ double AngularDistribution::AbsCrossSection::PerformCalculation(const std::strin
     else
         std::cout<<"Omega   = "<<Omega<<'\n';
     std::cout<<"epsilon = "<<epsilon<<'\n';
-    std::cout<<"Abs xs  =  "<<res<<" mb"<<'\n';
+    std::cout<<"Abs xs  =  "<<res<<" +/- "<<ures<<" mb"<<'\n';
     std::cout<<".............................................."<<'\n';
 
+    //Set parameters
+    fxs = res;
+    fuxs = ures;
     return res;
 }
 

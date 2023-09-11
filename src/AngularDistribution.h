@@ -139,12 +139,20 @@ namespace AngularDistribution
         std::pair<double, double> fRange;
         ThetaCMIntervals fIvs;
         AngularFitter fFitter;
+        double fxs;
+        double fuxs;
     public:
         AbsCrossSection(double thetamin, double thetamax,
                         std::vector<ROOT::RDF::RNode> dfs, TH1F* hmodel);
         void SetRunFitter(double xmin, double xmax, const std::string& reffile, TH1* hPS = nullptr);
         double PerformCalculation(const std::string& peak, Efficiency& eff, PhysicsUtils::ExperimentInfo& exp);
         TCanvas* Draw(double xmin, double xmax);
+
+        //Getters
+        double Get() const {return fxs;}
+        double GetU() const {return fuxs;}
+    private:
+        double UncertaintyAbsXS(double N, double epsilon, double uepsilon, PhysicsUtils::ExperimentInfo& exp);
     };
     TMultiGraph* CompareMethods(AngularFitter& ang, const std::string& peak,
                                 ThetaCMIntervals& ivs, Efficiency& eff, PhysicsUtils::ExperimentInfo& exp);
