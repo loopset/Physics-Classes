@@ -1,0 +1,3 @@
+/media/Data/PhysicsClasses/CMakeFiles/PhysicsClasses.dir
+/media/Data/PhysicsClasses/CMakeFiles/edit_cache.dir
+/media/Data/PhysicsClasses/CMakeFiles/rebuild_cache.dir

@@ -562,6 +562,31 @@ void Fitters::SpectrumFitter::WriteToFile(const std::string &file)
     f->Close(); delete f;
 }
 
+void Fitters::SpectrumFitter::PrintShiftedMeans()
+{
+    //Values
+    auto pars {std::vector<double>(fFitResult.GetParams(),
+                                   fFitResult.GetParams() + fFunc->GetNPars())};
+    //Only for gaussian
+    std::cout<<"//////////////// Shifted gaussians in E_x //////////////////////"<<'\n';
+    double shift {};
+    for(int p = 0; p < pars.size(); p++)
+    {
+        TString label {fFitResult.GetParameterName(p)};
+        if(label == "g0_Mean")
+        {
+            shift = pars[p];
+            std::cout<<"-> Shift in E_x = "<<shift<<" MeV"<<'\n';
+            continue;
+        }
+        if(label.Contains("_Mean"))
+        {
+            std::cout<<"-> Shifted "<<label<<" = "<<pars[p] - shift<<" MeV"<<'\n';
+        }
+    }
+    std::cout<<"///////////////////////////////////////////////////////////////"<<'\n';
+}
+
 Fitters::SpectrumPlotter::SpectrumPlotter(Fitters::SpectrumData* data, Fitters::SpectrumFunction* func, ROOT::Fit::FitResult res)
     : fData(data), fFunc(func), fRes(res)
 {}
