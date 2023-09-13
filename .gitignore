@@ -17,3 +17,8 @@ old/
 test/
 .cache/
 html/
+
+#Cmake
+CMakeCache.txt
+CMakeFiles/
+Makefile
