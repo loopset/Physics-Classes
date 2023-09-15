@@ -559,8 +559,7 @@ double AngularDistribution::AbsCrossSection::UncertaintyAbsXS(double N, double e
     double uNb {exp.GetUNb()};
     //3-> Uncertainty in epsilon
     double coeffEpsilon {- N / (exp.GetNt() * exp.GetNb() * Omega) / TMath::Power(epsilon, 2)};
-    double uEpsilon {0};//I still do not know how to compute the uncertainty of the mean efficiency...
-
+    double uEpsilon {uepsilon};//I still do not know how to compute the uncertainty of the mean efficiency...
     //Add everything
     double sum {TMath::Sqrt(coeffN * coeffN * uN * uN +
                             coeffNb * coeffNb * uNb * uNb +
