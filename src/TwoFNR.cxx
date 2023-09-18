@@ -264,7 +264,7 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
     cpubcounter++;
     //create multigraphs
     auto* mg {new TMultiGraph()};
-    mg->SetTitle(TString::Format("%s;#theta_{CM} [#circ];#frac{d#sigma}{d#Omega} [mb/sr]", (fName.length() > 0) ? fName.c_str() : ""));
+    mg->SetTitle(TString::Format("%s;#theta_{CM} [#circ];d#sigma / d#Omega [mb/sr]", (fName.length() > 0) ? fName.c_str() : ""));
     //Legend
     auto* leg {new TLegend(0.3, 0.3)};
     leg->SetBorderSize(0);
