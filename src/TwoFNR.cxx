@@ -2,6 +2,7 @@
 #define TwoFNR_cxx
 
 #include "TwoFNR.h"
+#include "Rtypes.h"
 #include "TCanvas.h"
 #include "TF1.h"
 #include "TGraph.h"
@@ -212,7 +213,7 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvas(TGraphErrors *gexp, double xmin, do
     cret->DivideSquare(1 + asym);
     //create multigraphs
     auto* mg {new TMultiGraph()};
-    mg->SetTitle(TString::Format("%s;#theta_{CM} [#circ];#frac{d#sigma}{d#Omega} [mb/sr]", (fName.length() > 0) ? fName.c_str() : ""));
+    mg->SetTitle(TString::Format("%s;#theta_{CM} [#circ];d#sigma / d#Omega [mb/sr]", (fName.length() > 0) ? fName.c_str() : ""));
     auto* mas {new TMultiGraph()};
     mas->SetTitle(";#theta_{CM} [#circ];Asymmetry");
     //Legend
@@ -257,7 +258,7 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvas(TGraphErrors *gexp, double xmin, do
     return cret;
 }
 
-TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, double xmin, double xmax, const std::vector<int>& ls, bool sf)
+TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, double xmin, double xmax, const std::vector<int>& ls, const std::vector<int>& colors, bool sf)
 {
     static int cpubcounter {0};
     auto* cret {new TCanvas(TString::Format("cPub%d", cpubcounter), "TwoFNR canvas for publication")};
@@ -272,9 +273,14 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
     //Experimental
     if(gexp)
     {
-        mg->Add(gexp, "pe");
-        leg->AddEntry(gexp, "\\mathrm{Exp.}", "pe");
+        //Clone to avoid interferences with other functions
+        auto* clone {(TGraphErrors*)gexp->Clone()};
+        clone->SetLineColor(kBlack);
+        mg->Add(clone, "pe");
+        leg->AddEntry(clone, "\\mathrm{Exp.}", "pe");
     }
+    //Style settings
+    bool customColors {false};
     //Fitted
     int idx {1};
     for(const auto& key : fKeys)
@@ -282,6 +288,7 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
         //Clone to avoid interferences with Draw() functions
         auto* clone {(TGraphErrors*)fFits[key]->Clone()};
         clone->SetLineWidth(3);
+        //Line style
         if(ls.size() > 0)
         {
             if(ls.size() != fKeys.size())
@@ -294,6 +301,12 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
         }
         else
             clone->SetLineStyle(idx);
+        //Colors
+        if(colors.size() == fKeys.size())
+        {
+            clone->SetLineColor(colors[idx - 1]);
+            customColors = true;
+        }
         mg->Add(clone, "c");//c line to smooth the angular intervals from the theoretical files
         //Append to legend
         TString entry;
@@ -303,12 +316,10 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
             entry = key;
         leg->AddEntry(clone, entry, "l");
         idx++;
-    }
-    //Draw legend in desidered or automatic order
-    
+    }    
     //Draw
     cret->cd();
-    mg->Draw("apc plc pmc");
+    mg->Draw((customColors) ? "apl" : "apc plc pmc");
     if(xmin != -1 && xmax != -1)
         mg->GetXaxis()->SetLimits(xmin, xmax);
     leg->Draw();
