@@ -265,6 +265,7 @@ TCanvas* TheoreticalUtils::TwoFNR::GetCanvasPublication(TGraphErrors *gexp, doub
     cpubcounter++;
     //create multigraphs
     auto* mg {new TMultiGraph()};
+    mg->SetMinimum(1e-2);//to avoid any issues with log scale (bug of root)
     mg->SetTitle(TString::Format("%s;#theta_{CM} [#circ];d#sigma / d#Omega [mb/sr]", (fName.length() > 0) ? fName.c_str() : ""));
     //Legend
     auto* leg {new TLegend(0.3, 0.3)};
