@@ -1,1 +1,0 @@
-/usr/bin/c++   -std=c++17 -pipe -fsigned-char -pthread CMakeFiles/PhysicsClasses.dir/main.cxx.o -o PhysicsClasses   -L/home/miguel/root/lib 
