@@ -11,6 +11,7 @@
 
 #include "Fit/FitResult.h"
 #include "Fit/Fitter.h"
+#include "Math/IFunction.h"
 
 #include <memory>
 #include <string>
@@ -132,6 +133,7 @@ public:
     typedef std::unordered_map<std::string, DoubleVec> StepPars;
 
 private:
+    std::shared_ptr<TF1> fTF1 {};
     ROOT::Fit::Fitter fFitter;
     ROOT::Fit::FitResult fFitResult;
     SpectrumFunction* fFunc {};
