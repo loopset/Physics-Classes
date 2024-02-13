@@ -6,6 +6,8 @@
 #include "TMath.h"
 #include "TRegexp.h"
 
+#include "Math/WrappedMultiTF1.h"
+
 #include <string>
 #include <vector>
 
@@ -84,9 +86,7 @@ Fitters::Model::ParPack Fitters::Model::UnpackParameters(const double* pars) con
     ParGroup cte {};
     for(int p = 0; p < NPar(); p++)
     {
-        std::cout << "i : " << p << '\n';
         auto [type, idx] {GetTypeIdx(ParameterName(p))};
-        std::cout << "Type : " << type << " idx : " << idx << '\n';
         if(type == "g")
             gaus[idx].push_back(pars[p]);
         else if(type == "v")
@@ -111,43 +111,47 @@ double Fitters::Model::DoEvalPar(const double* xx, const double* p) const
 {
     double x {xx[0]};
     // Unpack parameters = c-like array to our data structure
-    // auto pack = UnpackParameters(p);
+    auto pack = UnpackParameters(p);
     if(!p)
         std::cout << "No p" << '\n';
-    // auto gaus = pack[0];
-    // auto voigt = pack[1];
-    // auto phase = pack[2];
-    // auto cte = pack[3];
-    double sum {0};
-    // Run for every iteration
+    auto gaus = pack[0];
+    auto voigt = pack[1];
+    auto phase = pack[2];
+    auto cte = pack[3];
+    // Return value
+    double ret {};
+    // Run for every function
     // 1-->Gaussians
-    // std::vector<double> evalgauss(fNGauss);
-    // for(int g = 0; g < fNGauss; g++)
-    // {
-    //     // evalgauss[g] += gaus[g][0] * TMath::Gaus(x, gaus[g][1], gaus[g][2]);
-    // }
-    // // 2-->Voigts
-    // std::vector<double> evalvoigt(fNVoigt);
-    // for(int v = 0; v < fNVoigt; v++)
-    // {
-    //     // evalvoigt[v] += voigt[v][0] * TMath::Voigt(x - voigt[v][1], voigt[v][2], voigt[v][3]);
-    // }
-    // // 3-->Phase spaces
-    // std::vector<double> evalps(fNPS);
-    // for(int ps = 0; ps < fNPS; ps++)
-    // {
-    //     // auto val {EvalPS(ps, x)};
-    //     // evalps[ps] = phase[ps].front() * val;
-    // }
-    // // Sum all contributions but cte
-    // double sum {};
-    // for(auto& vec : {&evalgauss, &evalvoigt, &evalps})
-    //     for(const auto& e : *vec)
-    //         sum += e;
-    // // Sum cte contribution
-    // if(fCte)
-    //     sum += cte[0].front();
-    return sum;
+    for(int g = 0; g < fNGauss; g++)
+    {
+        ret += gaus[g][0] * TMath::Gaus(x, gaus[g][1], gaus[g][2]);
+    }
+    // 2-->Voigts
+    for(int v = 0; v < fNVoigt; v++)
+    {
+        ret += voigt[v][0] * TMath::Voigt(x - voigt[v][1], voigt[v][2], voigt[v][3]);
+    }
+    // 3-->Phase spaces
+    for(int ps = 0; ps < fNPS; ps++)
+    {
+        auto val {EvalPS(ps, x)};
+        ret += phase[ps].front() * val;
+    }
+    // Sum cte contribution
+    if(fCte)
+        ret += cte[0].front();
+    return ret;
+}
+
+std::pair<TF1*, ROOT::Math::WrappedMultiTF1> Fitters::Model::Wrap(double xmin, double xmax)
+{
+    auto* f {
+        new TF1 {"f", [this](double* x, double* p) { return (*this)(x, p); }, xmin, xmax, (int)NPar()},
+    };
+    // Send also parameter names to TF1
+    for(int i = 0, size = NPar(); i < size; i++)
+        f->SetParName(i, fParNames[i].c_str());
+    return {f, ROOT::Math::WrappedMultiTF1 {*f, static_cast<unsigned int>(f->GetNdim())}};
 }
 
 #endif // !FitModel_cxx

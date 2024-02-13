@@ -5,6 +5,7 @@
 
 #include "Math/IFunction.h"
 #include "Math/IParamFunction.h"
+#include "Math/WrappedMultiTF1.h"
 
 #include <string>
 #include <vector>
@@ -61,6 +62,9 @@ public:
 
     // Other custom functions
     std::pair<std::string, int> GetTypeIdx(const std::string& name) const;
+
+    // Workaround: wrap this into a TF1
+    std::pair<TF1*, ROOT::Math::WrappedMultiTF1> Wrap(double xmin, double xmax);
 
 private:
     void InitParNames();

@@ -11,7 +11,6 @@
 
 #include "Fit/FitResult.h"
 #include "Fit/Fitter.h"
-#include "Math/IFunction.h"
 
 #include <memory>
 #include <string>
