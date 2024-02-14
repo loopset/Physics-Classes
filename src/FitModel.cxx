@@ -5,13 +5,16 @@
 
 #include "TMath.h"
 #include "TRegexp.h"
+#include "TSpline.h"
 
 #include "Math/WrappedMultiTF1.h"
 
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
-Fitters::Model::Model(int ngaus, int nvoigt, const std::vector<TH1*>& ps, bool withCte)
+Fitters::Model::Model(int ngaus, int nvoigt, const std::vector<TSpline3*>& ps, bool withCte)
     : fNGauss(ngaus),
       fNVoigt(nvoigt),
       fNPS(ps.size()),
@@ -20,54 +23,78 @@ Fitters::Model::Model(int ngaus, int nvoigt, const std::vector<TH1*>& ps, bool w
 {
     fPars = std::vector<double>(NPar());
     fParNames = std::vector<std::string>(NPar());
+    fChart = std::vector<std::pair<std::string, unsigned int>>(NPar());
+    InitFuncParNames();
     InitParNames();
 }
 
 double Fitters::Model::EvalPS(unsigned int i, double x) const
 {
-    auto* h {fPS[i]};
-    auto bin {h->FindBin(x)};
-    return h->GetBinContent(bin);
+    // auto* h {fPS[i]};
+    // auto bin {h->FindBin(x)};
+    // return h->GetBinContent(bin);
+    return fPS[i]->Eval(x);
+}
+
+void Fitters::Model::InitFuncParNames()
+{
+    fFuncParNames = {
+        {"g", {"_Amp", "_Mean", "_Sigma"}},
+        {"v", {"_Amp", "_Mean", "_Sigma", "_Lg"}},
+        {"ps", {"_Amp"}},
+        {"cte", {"_Amp"}},
+    };
 }
 
 void Fitters::Model::InitParNames()
 {
     // Gaus
-    std::vector<std::string> gl {"_Amp", "_Mean", "_Sigma"};
     for(unsigned int i = 0; i < fNGauss; i++)
     {
         for(unsigned int p = 0; p < fNParGauss; p++)
         {
             unsigned int idx {i * fNParGauss + p};
-            fParNames[idx] = "g" + std::to_string(i) + gl[p];
+            // Set parameter name
+            fParNames[idx] = "g" + std::to_string(i) + fFuncParNames["g"][p];
+            // Push to chart
+            fChart[idx] = {"g", i};
         }
     }
     unsigned int offset {static_cast<unsigned int>(fNGauss * fNParGauss)};
     // Voigt
-    std::vector<std::string> vl {"_Amp", "_Mean", "_Sigma", "_Lg"};
     for(unsigned int i = 0; i < fNVoigt; i++)
     {
         for(unsigned int p = 0; p < fNParVoigt; p++)
         {
             unsigned int idx {i * fNParVoigt + p + offset};
-            fParNames[idx] = "v" + std::to_string(i) + vl[p];
+            // Set name
+            fParNames[idx] = "v" + std::to_string(i) + fFuncParNames["v"][p];
+            // Push to chart
+            fChart[idx] = {"v", i};
         }
     }
     offset += fNVoigt * fNParVoigt;
     // Phase spaces
-    std::vector<std::string> pl {"_Amp"};
     for(unsigned int i = 0; i < fNPS; i++)
     {
         for(unsigned int p = 0; p < fNParPS; p++)
         {
             unsigned int idx {i * fNParPS + p + offset};
-            fParNames[idx] = "ps" + std::to_string(i) + pl[p];
+            // Set name
+            fParNames[idx] = "ps" + std::to_string(i) + fFuncParNames["ps"][p];
+            // Chart
+            fChart[idx] = {"ps", i};
         }
     }
     offset += fNPS * fNParPS;
     // Constant
     if(fCte)
+    {
+        // Set name
         fParNames[offset] = "cte0_Amp";
+        // Push to chart
+        fChart[offset] = {"cte", 0};
+    }
 }
 
 std::pair<std::string, int> Fitters::Model::GetTypeIdx(const std::string& name) const
@@ -78,6 +105,20 @@ std::pair<std::string, int> Fitters::Model::GetTypeIdx(const std::string& name) 
     return {func, idx};
 }
 
+unsigned int Fitters::Model::GetIdxFromLabel(const std::string& typeIdx, unsigned int par) const
+{
+    // Attach label of parameter
+    auto [name, idx] {GetTypeIdx(typeIdx)};
+    auto label {typeIdx + fFuncParNames.at(name).at(par)};
+    // And find index in vector
+    for(unsigned int i = 0, size = fParNames.size(); i < size; i++)
+    {
+        if(fParNames[i] == label)
+            return i;
+    }
+    throw std::runtime_error("Model::GetIdxFromLabel(): could not locate idx of label");
+}
+
 Fitters::Model::ParPack Fitters::Model::UnpackParameters(const double* pars) const
 {
     ParGroup gaus {};
@@ -86,7 +127,7 @@ Fitters::Model::ParPack Fitters::Model::UnpackParameters(const double* pars) con
     ParGroup cte {};
     for(int p = 0; p < NPar(); p++)
     {
-        auto [type, idx] {GetTypeIdx(ParameterName(p))};
+        auto [type, idx] {fChart[p]};
         if(type == "g")
             gaus[idx].push_back(pars[p]);
         else if(type == "v")
@@ -112,8 +153,6 @@ double Fitters::Model::DoEvalPar(const double* xx, const double* p) const
     double x {xx[0]};
     // Unpack parameters = c-like array to our data structure
     auto pack = UnpackParameters(p);
-    if(!p)
-        std::cout << "No p" << '\n';
     auto gaus = pack[0];
     auto voigt = pack[1];
     auto phase = pack[2];
