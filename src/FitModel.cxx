@@ -1,20 +1,20 @@
-#ifndef FitModel_cxx
-#define FitModel_cxx
-
 #include "FitModel.h"
 
 #include "TMath.h"
 #include "TRegexp.h"
 #include "TSpline.h"
 
-#include "Math/WrappedMultiTF1.h"
+#include "PhysColors.h"
 
+#include <ios>
+#include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
-Fitters::Model::Model(int ngaus, int nvoigt, const std::vector<TSpline3*>& ps, bool withCte)
+Fitters::Model::Model(int ngaus, int nvoigt, const std::vector<TH1D>& ps, bool withCte)
     : fNGauss(ngaus),
       fNVoigt(nvoigt),
       fNPS(ps.size()),
@@ -26,14 +26,24 @@ Fitters::Model::Model(int ngaus, int nvoigt, const std::vector<TSpline3*>& ps, b
     fChart = std::vector<std::pair<std::string, unsigned int>>(NPar());
     InitFuncParNames();
     InitParNames();
+    InitSplines();
+}
+
+void Fitters::Model::InitSplines()
+{
+    for(const auto& h : fPS)
+        fSpePS.push_back(std::make_shared<TSpline3>(&h, "b2,e2", 0, 0));
 }
 
 double Fitters::Model::EvalPS(unsigned int i, double x) const
 {
-    // auto* h {fPS[i]};
-    // auto bin {h->FindBin(x)};
-    // return h->GetBinContent(bin);
-    return fPS[i]->Eval(x);
+    if(fUseSpline)
+        return fSpePS[i]->Eval(x);
+    else
+    {
+        auto bin {fPS[i].GetXaxis()->FindBin(x)};
+        return fPS[i].GetBinContent(bin);
+    }
 }
 
 void Fitters::Model::InitFuncParNames()
@@ -152,7 +162,10 @@ double Fitters::Model::DoEvalPar(const double* xx, const double* p) const
 {
     double x {xx[0]};
     // Unpack parameters = c-like array to our data structure
-    auto pack = UnpackParameters(p);
+    // Check of null based on ROOT's forum answer
+    // https://root-forum.cern.ch/t/error-on-doevalpar-with-custom-fit-model-and-root-fitter/58158/3?u=loopset
+    const double* pars {(p) ? p : fPars.data()};
+    auto pack = UnpackParameters(pars);
     auto gaus = pack[0];
     auto voigt = pack[1];
     auto phase = pack[2];
@@ -182,15 +195,12 @@ double Fitters::Model::DoEvalPar(const double* xx, const double* p) const
     return ret;
 }
 
-std::pair<TF1*, ROOT::Math::WrappedMultiTF1> Fitters::Model::Wrap(double xmin, double xmax)
+void Fitters::Model::Print() const
 {
-    auto* f {
-        new TF1 {"f", [this](double* x, double* p) { return (*this)(x, p); }, xmin, xmax, (int)NPar()},
-    };
-    // Send also parameter names to TF1
-    for(int i = 0, size = NPar(); i < size; i++)
-        f->SetParName(i, fParNames[i].c_str());
-    return {f, ROOT::Math::WrappedMultiTF1 {*f, static_cast<unsigned int>(f->GetNdim())}};
+    std::cout << BOLDYELLOW << "···· Model func settings ····" << '\n';
+    std::cout << "-> NGauss : " << fNGauss << '\n';
+    std::cout << "-> NVoigt : " << fNVoigt << '\n';
+    std::cout << "-> NPS    : " << fNPS << '\n';
+    std::cout << "-> UseSpline ? " << std::boolalpha << fUseSpline << '\n';
+    std::cout << "······························" << RESET << '\n';
 }
-
-#endif // !FitModel_cxx

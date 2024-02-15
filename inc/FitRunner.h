@@ -3,10 +3,10 @@
 
 #include "TFitResult.h"
 
-#include "Fit/BinData.h"
 #include "Fit/Fitter.h"
 
 #include "FitModel.h"
+#include "FitObjective.h"
 
 #include <string>
 #include <unordered_map>
@@ -26,14 +26,12 @@ public:
 
 private:
     ROOT::Fit::Fitter fFitter;
-    Model* fModel {};
+    Objective fObj;
 
 public:
     Runner() = default;
-    Runner(Model* model) : fModel(model) {}
+    Runner(const Data& data, const Model& model) : fObj(data, model) { SetFCN(); }
     // Setters
-    void SetModelFunc(Model* model);
-    void SetModelWrap(const ROOT::Math::WrappedMultiTF1& wrap);
     void SetInitial(const Init& pars);
     void SetBounds(const Bounds& bounds);
     void SetFixed(const Fixed& fixed);
@@ -42,11 +40,13 @@ public:
     // Getters
     ROOT::Fit::Fitter& GetFitter() { return fFitter; }
     TFitResult GetFitResult() const { return TFitResult {fFitter.Result()}; }
+    Objective& GetObjective() { return fObj; }
 
     // Other methods
-    bool Fit(const ROOT::Fit::BinData& data);
+    bool Fit();
 
 private:
+    void SetFCN();
     void ParametersAtLimit();
     bool CompareDoubles(double a, double b, double tol = 0.0001) const;
 };

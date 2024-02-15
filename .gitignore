@@ -13,10 +13,10 @@ compile_commands.json
 
 #ignore directories
 build/
-old/
 test/
 .cache/
 html/
+install/
 
 #Cmake
 CMakeCache.txt

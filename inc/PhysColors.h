@@ -1,5 +1,5 @@
-#ifndef Colors_h
-#define Colors_h
+#ifndef PhysColors_h
+#define PhysColors_h
 
 // This file just defines the preprocessor variables allowing
 // colorized output in std::cout

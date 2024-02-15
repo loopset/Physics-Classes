@@ -8,24 +8,16 @@ project(PhysicsClasses)
 set(CMAKE_CXX_STANDARD 17) # same as ROOT built for Ubuntu
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE) # force require this standard
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-##ROOT
+
+#ROOT
 find_package(ROOT 6.20 CONFIG REQUIRED COMPONENTS MathCore Physics)
-include(${ROOT_USE_FILE})##automatically loads ROOT_INCLUDE_DIRS and ROOT_LIBRARY_DIR (BUT NOT LIBRARIES, they must be added manually in target_link_libs)
-include_directories(${CMAKE_SOURCE_DIR}/src)
+include(${ROOT_USE_FILE})
+include_directories(${CMAKE_SOURCE_DIR}/inc)
 
-add_executable(${PROJECT_NAME} main.cxx)
-# ## set files to compile
-# file(GLOB sources ${CMAKE_SOURCE_DIR}/src/*.cxx)
-# file(GLOB headers ${CMAKE_SOURCE_DIR}/inc/*.h)
+# Load Scripts.cmake from ActRoot
+set(SCRIPTS "$ENV{ACTROOT}/Scripts.cmake")
+include(${SCRIPTS})
+# Set install prefix
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/install)
 
-# # ActRoot LinkDef and dict generation
-# set(LINKDEF_LOCATION ${CMAKE_SOURCE_DIR}/ActRootLinkDef.h)
-# set(DICTIONARY_NAME G__${PROJECT_NAME})
-# ROOT_GENERATE_DICTIONARY(${DICTIONARY_NAME} ${headers} LINKDEF  ${LINKDEF_LOCATION})
-
-# # add ActRoot library
-# add_library(${PROJECT_NAME} SHARED ${sources} ${headers} ${DICTIONARY_NAME}.cxx)
-# ## add ActRoot headers so g++ knows where to locate them
-# target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/inc)
-# # link to ROOT
-# target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES})
+add_actlibrary(NAME PhysicsClasses LINK)

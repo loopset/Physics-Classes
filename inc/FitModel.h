@@ -5,12 +5,13 @@
 #include "TSpline.h"
 
 #include "Math/IParamFunction.h"
-#include "Math/WrappedMultiTF1.h"
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
 namespace Fitters
 {
 class Model : public ROOT::Math::IParametricFunctionMultiDimTempl<double>
@@ -20,8 +21,10 @@ public:
     typedef std::vector<ParGroup> ParPack;
 
 private:
-    // PS data
-    std::vector<TSpline3*> fPS {};
+    // PS data (by copied histograms)
+    std::vector<TH1D> fPS {};
+    // Splines of PS to plot global fit
+    std::vector<std::shared_ptr<TSpline3>> fSpePS {};
     // Number of inner functions to use: gauss, voigt, ps and cte
     int fNGauss {};
     int fNVoigt {};
@@ -37,10 +40,12 @@ private:
     std::vector<double> fPars {};
     std::vector<std::string> fParNames {};
     std::vector<std::pair<std::string, unsigned int>> fChart;
+    // Configuration options
+    bool fUseSpline {false};
 
 public:
     // Constructor
-    Model(int ngaus, int nvoigt, const std::vector<TSpline3*>& ps = {}, bool withCte = false);
+    Model(int ngaus, int nvoigt, const std::vector<TH1D>& ps = {}, bool withCte = false);
 
     // Derived functions from IBasePars
     unsigned int NPar() const override;
@@ -55,21 +60,30 @@ public:
     }
 
     // Derived functions from IBaseFunction
-    Model* Clone() const override { return new Model {fNGauss, fNVoigt, fPS, fCte}; };
+    Model* Clone() const override
+    {
+        auto ret {new Model {fNGauss, fNVoigt, fPS, fCte}};
+        ret->SetParameters(Parameters());
+        return ret;
+    };
     bool HasGradient() const override { return false; }
     unsigned int NDim() const override { return 1; }
 
+    // Custom getters and setters
+    void SetUseSpline(bool use) { fUseSpline = use; }
+    bool GetUseSpline() const { return fUseSpline; }
+    double EvalPS(unsigned int i, double x) const;
+
     // Other custom functions to get type func and idx from par name and viceversa
     unsigned int GetIdxFromLabel(const std::string& typeIdx, unsigned int par) const;
+    ParPack UnpackParameters(const double* pars) const;
 
-    // Workaround: wrap this into a TF1
-    std::pair<TF1*, ROOT::Math::WrappedMultiTF1> Wrap(double xmin, double xmax);
+    void Print() const;
 
 private:
+    void InitSplines();
     void InitFuncParNames();
     void InitParNames();
-    ParPack UnpackParameters(const double* pars) const;
-    double EvalPS(unsigned int i, double x) const;
     std::pair<std::string, int> GetTypeIdx(const std::string& name) const;
     // Override of IBaseFunction
     double DoEvalPar(const double* x, const double* p) const override;

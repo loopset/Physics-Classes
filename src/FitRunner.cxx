@@ -1,23 +1,15 @@
-#ifndef FitRunner_cxx
-#define FitRunner_cxx
-
 #include "FitRunner.h"
 
-#include "Fit/BinData.h"
-#include "Math/WrappedMultiTF1.h"
-
-#include "FitModel.h"
-
 #include <iostream>
+#include <vector>
 
-void Fitters::Runner::SetModelFunc(Fitters::Model* model)
+void Fitters::Runner::SetFCN()
 {
-    fFitter.SetFunction(*model, false);
-}
-
-void Fitters::Runner::SetModelWrap(const ROOT::Math::WrappedMultiTF1& wrap)
-{
-    fFitter.SetFunction(wrap, false);
+    // Toy double pars[NDim] that just serve as initialization
+    std::vector<double> pars(fObj.NDim(), 0);
+    // Objective func is managed by us
+    // But model func is cloned when set
+    fFitter.SetFCN(fObj, *(fObj.GetModel()), &(pars.front()), fObj.GetData()->GetSize(), true);
 }
 
 void Fitters::Runner::SetInitial(const Init& pars)
@@ -26,7 +18,7 @@ void Fitters::Runner::SetInitial(const Init& pars)
     {
         for(int p = 0; p < vals.size(); p++)
         {
-            auto idx {fModel->GetIdxFromLabel(func, p)};
+            auto idx {fObj.GetModel()->GetIdxFromLabel(func, p)};
             fFitter.Config().ParSettings(idx).SetValue(vals[p]);
         }
     }
@@ -38,7 +30,7 @@ void Fitters::Runner::SetBounds(const Bounds& bounds)
     {
         for(int p = 0; p < vals.size(); p++)
         {
-            auto idx {fModel->GetIdxFromLabel(func, p)};
+            auto idx {fObj.GetModel()->GetIdxFromLabel(func, p)};
             auto [min, max] {vals[p]};
             if(min == -11 || max == -11)
                 continue;
@@ -53,7 +45,7 @@ void Fitters::Runner::SetFixed(const Fixed& fixed)
     {
         for(int p = 0; p < vals.size(); p++)
         {
-            auto idx {fModel->GetIdxFromLabel(func, p)};
+            auto idx {fObj.GetModel()->GetIdxFromLabel(func, p)};
             if(vals[p])
             {
                 fFitter.Config().ParSettings(idx).Fix();
@@ -68,7 +60,7 @@ void Fitters::Runner::SetStep(const Step& step)
     {
         for(int p = 0; p < vals.size(); p++)
         {
-            auto idx {fModel->GetIdxFromLabel(func, p)};
+            auto idx {fObj.GetModel()->GetIdxFromLabel(func, p)};
             if(vals[p] == -11)
                 continue;
             fFitter.Config().ParSettings(idx).SetStepSize(vals[p]);
@@ -76,12 +68,14 @@ void Fitters::Runner::SetStep(const Step& step)
     }
 }
 
-bool Fitters::Runner::Fit(const ROOT::Fit::BinData& data)
+bool Fitters::Runner::Fit()
 {
     // Print settings
     fFitter.Config().MinimizerOptions().Print();
+    fObj.GetModel()->Print();
+    fObj.Print();
     // Perform fit
-    auto ret {fFitter.Fit(data)};
+    auto ret {fFitter.FitFCN()};
     // Print
     fFitter.Result().Print(std::cout);
     // Check parameters at limit
@@ -95,7 +89,6 @@ bool Fitters::Runner::CompareDoubles(double a, double b, double tol) const
     bool comp {std::abs(a - b) < tol * greatedMagnitude};
     return comp;
 }
-
 
 void Fitters::Runner::ParametersAtLimit()
 {
@@ -126,4 +119,3 @@ void Fitters::Runner::ParametersAtLimit()
         }
     }
 }
-#endif // !FitRunner_cxx
