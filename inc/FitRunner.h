@@ -45,6 +45,8 @@ public:
     // Other methods
     bool Fit();
 
+    void Write(const std::string& file) const;
+
 private:
     void SetFCN();
     void ParametersAtLimit();

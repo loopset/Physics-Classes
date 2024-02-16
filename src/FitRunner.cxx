@@ -1,6 +1,9 @@
 #include "FitRunner.h"
 
+#include "TFitResult.h"
+
 #include <iostream>
+#include <string>
 #include <vector>
 
 void Fitters::Runner::SetFCN()
@@ -118,4 +121,11 @@ void Fitters::Runner::ParametersAtLimit()
             }
         }
     }
+}
+
+void Fitters::Runner::Write(const std::string& file) const
+{
+    TFitResult res {fFitter.Result()};
+    res.SetName("FitResult");
+    res.SaveAs(file.c_str());
 }
