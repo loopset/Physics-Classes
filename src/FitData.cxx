@@ -22,3 +22,27 @@ void Fitters::Data::Fill(const TH1D& h)
         throw std::runtime_error("Data::Fill(): size of data is < 2, a required minimum!");
     fBinWidth = std::abs(fX[1] - fX[0]);
 }
+
+int Fitters::Data::GetBin(double x) const
+{
+    int bin {};
+    if(x <= fXLow)
+        return 0;
+    else if(x >= fXUp)
+        return fX.size() - 1;
+    else
+        bin = int(fX.size() * (x - fXLow) / (fXUp - fXLow));
+    if(bin < 0 || bin >= fX.size())
+        throw std::runtime_error("Data::GetBin(): wrong bin calculation");
+    return bin;
+}
+
+double Fitters::Data::Integral(double xmin, double xmax) const
+{
+    auto low {GetBin(xmin)};
+    auto up {GetBin(xmax)};
+    double ret {};
+    for(auto bin = low; bin <= up; bin++)
+        ret += fY.at(bin);
+    return ret;
+}

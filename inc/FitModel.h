@@ -17,8 +17,8 @@ namespace Fitters
 class Model : public ROOT::Math::IParametricFunctionMultiDimTempl<double>
 {
 public:
-    typedef std::unordered_map<int, std::vector<double>> ParGroup;
-    typedef std::vector<ParGroup> ParPack;
+    typedef std::vector<std::vector<double>> ParPack;
+    typedef std::vector<ParPack> ParVec;
 
 private:
     // PS data (by copied histograms)
@@ -73,10 +73,11 @@ public:
     void SetUseSpline(bool use) { fUseSpline = use; }
     bool GetUseSpline() const { return fUseSpline; }
     double EvalPS(unsigned int i, double x) const;
+    double EvalWithPacks(double x, ParPack& gaus, ParPack& voigt, ParPack& phase, ParPack& cte) const;
 
     // Other custom functions to get type func and idx from par name and viceversa
     unsigned int GetIdxFromLabel(const std::string& typeIdx, unsigned int par) const;
-    ParPack UnpackParameters(const double* pars) const;
+    ParVec UnpackParameters(const double* pars) const;
 
     void Print() const;
 

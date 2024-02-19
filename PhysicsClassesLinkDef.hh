@@ -16,6 +16,18 @@
 #pragma link C++ class Fitters::Runner;
 #pragma link C++ class Fitters::Plotter;
 
+// ANGULAR
+#pragma link C++ namespace Angular;
+
+#pragma link C++ class Angular::Intervals;
+#pragma link C++ class Angular::Fitter;
+
+// INTERPOLATORS
+#pragma link C++ namespace Interpolators;
+
+#pragma link C++ class Interpolators::Efficiency;
+
+
 // Model plotter
 #pragma link C++ namespace PlotUtils;
 

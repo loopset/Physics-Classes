@@ -1,8 +1,10 @@
 #include "FitRunner.h"
 
+#include "TFile.h"
 #include "TFitResult.h"
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -125,7 +127,14 @@ void Fitters::Runner::ParametersAtLimit()
 
 void Fitters::Runner::Write(const std::string& file) const
 {
+    // open file
+    auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
+    // save parameter names (not saved by TFitResult :/)
+    std::vector<std::string> names;
+    for(int i = 0; i < fObj.NDim(); i++)
+        names.push_back(fObj.GetModel()->ParameterName(i));
+    f->WriteObject(&names, "ParNames");
+    // and now fit result
     TFitResult res {fFitter.Result()};
-    res.SetName("FitResult");
-    res.SaveAs(file.c_str());
+    f->WriteObject(&res, "FitResult");
 }

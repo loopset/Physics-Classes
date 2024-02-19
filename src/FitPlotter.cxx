@@ -47,9 +47,10 @@ std::unordered_map<std::string, TH1D*> Fitters::Plotter::GetIndividualHists()
     auto phase = pack[2];
     auto cte = pack[3];
     // Gauss
-    for(const auto& [i, pars] : gaus)
+    int idx = 0;
+    for(const auto& pars : gaus)
     {
-        std::string key {"g" + std::to_string(i)};
+        std::string key {"g" + std::to_string(idx)};
         // Function
         auto f = new TF1(key.c_str(), "gaus", fData->GetXLow(), fData->GetXUp());
         f->SetParameters(&pars[0]);
@@ -57,11 +58,13 @@ std::unordered_map<std::string, TH1D*> Fitters::Plotter::GetIndividualHists()
         ret[key] = new TH1D(("h" + key).c_str(), key.c_str(), fData->GetSize(), fData->GetXLow(), fData->GetXUp());
         FillHistoFromFunc(ret[key], f);
         delete f;
+        idx++;
     }
     // Voigt
-    for(const auto& [i, pars] : voigt)
+    idx = 0;
+    for(const auto& pars : voigt)
     {
-        std::string key {"v" + std::to_string(i)};
+        std::string key {"v" + std::to_string(idx)};
         // Function
         auto f = new TF1(key.c_str(), "[0] * TMath::Voigt(x - [1], [2], [3])", fData->GetXLow(), fData->GetXUp());
         f->SetParameters(&pars[0]);
@@ -69,24 +72,28 @@ std::unordered_map<std::string, TH1D*> Fitters::Plotter::GetIndividualHists()
         ret[key] = new TH1D(("h" + key).c_str(), key.c_str(), fData->GetSize(), fData->GetXLow(), fData->GetXUp());
         FillHistoFromFunc(ret[key], f);
         delete f;
+        idx++;
     }
     // Phase space
-    for(const auto& [i, pars] : phase)
+    idx = 0;
+    for(const auto& pars : phase)
     {
-        std::string key {"ps" + std::to_string(i)};
+        std::string key {"ps" + std::to_string(idx)};
         ret[key] = new TH1D(("h" + key).c_str(), key.c_str(), fData->GetSize(), fData->GetXLow(), fData->GetXUp());
         // Manually fill it
         for(int bin = 1; bin <= ret[key]->GetNbinsX(); bin++)
         {
             auto x {ret[key]->GetXaxis()->GetBinCenter(bin)};
-            auto y {pars.front() * fModel->EvalPS(i, x)};
+            auto y {pars.front() * fModel->EvalPS(idx, x)};
             ret[key]->SetBinContent(bin, y);
         }
+        idx++;
     }
     // Cte
-    for(const auto& [i, pars] : cte)
+    idx = 0;
+    for(const auto& pars : cte)
     {
-        std::string key {"cte" + std::to_string(i)};
+        std::string key {"cte" + std::to_string(idx)};
         // Function
         auto f = new TF1(key.c_str(), "[0]", fData->GetXLow(), fData->GetXUp());
         f->SetParameters(&pars[0]);
@@ -94,7 +101,10 @@ std::unordered_map<std::string, TH1D*> Fitters::Plotter::GetIndividualHists()
         ret[key] = new TH1D(("h" + key).c_str(), key.c_str(), fData->GetSize(), fData->GetXLow(), fData->GetXUp());
         FillHistoFromFunc(ret[key], f);
         delete f;
+        idx++;
     }
+    // Set directory to null
+    for(auto& [_, h] : ret)
+        h->SetDirectory(nullptr);
     return std::move(ret);
 }
-

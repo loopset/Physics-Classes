@@ -65,6 +65,13 @@ double Fitters::Objective::DoEvalWithIntegral(int i, const double* p) const
 
 double Fitters::Objective::DoEvalWithDivisions(double x, const double* p) const
 {
+    // Unpack parameters (once per call)
+    auto pack = fModel->UnpackParameters(p);
+    auto gaus = pack[0];
+    auto voigt = pack[1];
+    auto phase = pack[2];
+    auto cte = pack[3];
+    // Define steps
     double start {x - 0.5 * fData->GetBinWidth()};
     double step {fData->GetBinWidth() / fNdiv};
     double sum {};
@@ -72,7 +79,7 @@ double Fitters::Objective::DoEvalWithDivisions(double x, const double* p) const
     {
         // Center of division (index + 0.5)
         double xi {start + (i + 0.5) * step};
-        sum += (*fModel)(&xi, p);
+        sum += fModel->EvalWithPacks(xi, gaus, voigt, phase, cte);
     }
     // Get mean
     sum /= fNdiv;

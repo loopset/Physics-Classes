@@ -31,6 +31,7 @@ private:
 public:
     Runner() = default;
     Runner(const Data& data, const Model& model) : fObj(data, model) { SetFCN(); }
+
     // Setters
     void SetInitial(const Init& pars);
     void SetBounds(const Bounds& bounds);

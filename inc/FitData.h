@@ -28,6 +28,8 @@ public:
     unsigned int GetSize() const { return fSize; }
     double GetXLowEdge(unsigned int i) { return fX[i] - 0.5 * fBinWidth; }
     double GetXUpEdge(unsigned int i) { return fX[i] + 0.5 * fBinWidth; }
+    int GetBin(double x) const;
+    double Integral(double xmin, double xmax) const;
 
 private:
     void Fill(const TH1D& h);

@@ -129,12 +129,12 @@ unsigned int Fitters::Model::GetIdxFromLabel(const std::string& typeIdx, unsigne
     throw std::runtime_error("Model::GetIdxFromLabel(): could not locate idx of label");
 }
 
-Fitters::Model::ParPack Fitters::Model::UnpackParameters(const double* pars) const
+Fitters::Model::ParVec Fitters::Model::UnpackParameters(const double* pars) const
 {
-    ParGroup gaus {};
-    ParGroup voigt {};
-    ParGroup ps {};
-    ParGroup cte {};
+    ParPack gaus(fNGauss);
+    ParPack voigt(fNVoigt);
+    ParPack ps(fNPS);
+    ParPack cte(fCte);
     for(int p = 0; p < NPar(); p++)
     {
         auto [type, idx] {fChart[p]};
@@ -149,7 +149,7 @@ Fitters::Model::ParPack Fitters::Model::UnpackParameters(const double* pars) con
         else
             throw std::runtime_error("Model::UnpackParameters(): received wrong type of func");
     }
-    return {gaus, voigt, ps, cte};
+    return {std::move(gaus), std::move(voigt), std::move(ps), std::move(cte)};
 }
 
 unsigned int Fitters::Model::NPar() const
@@ -157,6 +157,27 @@ unsigned int Fitters::Model::NPar() const
     return fNGauss * fNParGauss + fNVoigt * fNParVoigt + fNPS * fNParPS + static_cast<int>(fCte);
 }
 
+double Fitters::Model::EvalWithPacks(double x, ParPack& gaus, ParPack& voigt, ParPack& phase, ParPack& cte) const
+{
+    double ret {};
+    // Run for every function
+    // 1-->Gaussians
+    for(int g = 0; g < fNGauss; g++)
+        ret += gaus[g][0] * TMath::Gaus(x, gaus[g][1], gaus[g][2]);
+    // 2-->Voigts
+    for(int v = 0; v < fNVoigt; v++)
+        ret += voigt[v][0] * TMath::Voigt(x - voigt[v][1], voigt[v][2], voigt[v][3]);
+    // 3-->Phase spaces
+    for(int ps = 0; ps < fNPS; ps++)
+    {
+        auto val {EvalPS(ps, x)};
+        ret += phase[ps].front() * val;
+    }
+    // Sum cte contribution
+    if(fCte)
+        ret += cte[0].front();
+    return ret;
+}
 
 double Fitters::Model::DoEvalPar(const double* xx, const double* p) const
 {
@@ -170,29 +191,8 @@ double Fitters::Model::DoEvalPar(const double* xx, const double* p) const
     auto voigt = pack[1];
     auto phase = pack[2];
     auto cte = pack[3];
-    // Return value
-    double ret {};
-    // Run for every function
-    // 1-->Gaussians
-    for(int g = 0; g < fNGauss; g++)
-    {
-        ret += gaus[g][0] * TMath::Gaus(x, gaus[g][1], gaus[g][2]);
-    }
-    // 2-->Voigts
-    for(int v = 0; v < fNVoigt; v++)
-    {
-        ret += voigt[v][0] * TMath::Voigt(x - voigt[v][1], voigt[v][2], voigt[v][3]);
-    }
-    // 3-->Phase spaces
-    for(int ps = 0; ps < fNPS; ps++)
-    {
-        auto val {EvalPS(ps, x)};
-        ret += phase[ps].front() * val;
-    }
-    // Sum cte contribution
-    if(fCte)
-        ret += cte[0].front();
-    return ret;
+    // Call the public function
+    return EvalWithPacks(x, gaus, voigt, phase, cte);
 }
 
 void Fitters::Model::Print() const
