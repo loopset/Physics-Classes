@@ -44,7 +44,7 @@ public:
     Objective& GetObjective() { return fObj; }
 
     // Other methods
-    bool Fit();
+    bool Fit(bool print = true);
 
     void Write(const std::string& file) const;
 

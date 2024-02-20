@@ -142,7 +142,7 @@ void Angular::Fitter::Run()
         // Config it
         ConfigRunner(runner);
         // Fit!
-        runner.Fit();
+        runner.Fit(false);
         fRes.push_back(runner.GetFitResult());
     }
     // Implicitly compute integrals
@@ -256,6 +256,22 @@ void Angular::Fitter::CountsBySum(const std::string& key, unsigned int iv, int n
     // Scale to full data
     fSumCounts[key].push_back(integral / scale);
     delete h;
+}
+
+Angular::Fitter::CountsIv Angular::Fitter::GetIgCountsFor(const std::string& peak) const
+{
+    if(fIgCounts.count(peak))
+        return fIgCounts.at(peak);
+    else
+        throw std::invalid_argument("Fitter::GetIgCountsFor(): received not listed peak");
+}
+
+Angular::Fitter::CountsIv Angular::Fitter::GetSumCountsFor(const std::string& peak) const
+{
+    if(fSumCounts.count(peak))
+        return fSumCounts.at(peak);
+    else
+        throw std::invalid_argument("Fitter::GetSumCountsFor(): received not listed peak");
 }
 
 TCanvas* Angular::Fitter::DrawCounts()

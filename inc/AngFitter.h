@@ -49,6 +49,10 @@ public:
     void SetUseDivisions(bool use) { fUseDivisions = use; }
     void SetUseIntegral(bool use) { fUseIntegral = use; }
 
+    // Getters
+    CountsIv GetIgCountsFor(const std::string& peak) const;
+    CountsIv GetSumCountsFor(const std::string& peak) const;
+
     // Main methods
     void Run();
     void ComputeIntegrals(int nsigma = 1);

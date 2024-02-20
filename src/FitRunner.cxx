@@ -73,16 +73,20 @@ void Fitters::Runner::SetStep(const Step& step)
     }
 }
 
-bool Fitters::Runner::Fit()
+bool Fitters::Runner::Fit(bool print)
 {
     // Print settings
-    fFitter.Config().MinimizerOptions().Print();
-    fObj.GetModel()->Print();
-    fObj.Print();
+    if(print)
+    {
+        fFitter.Config().MinimizerOptions().Print();
+        fObj.GetModel()->Print();
+        fObj.Print();
+    }
     // Perform fit
     auto ret {fFitter.FitFCN()};
     // Print
-    fFitter.Result().Print(std::cout);
+    if(print)
+        fFitter.Result().Print(std::cout);
     // Check parameters at limit
     ParametersAtLimit();
     return ret;

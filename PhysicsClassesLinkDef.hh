@@ -21,12 +21,18 @@
 
 #pragma link C++ class Angular::Intervals;
 #pragma link C++ class Angular::Fitter;
+#pragma link C++ class Angular::DifferentialXS;
+#pragma link C++ class Angular::Comparator;
 
 // INTERPOLATORS
 #pragma link C++ namespace Interpolators;
 
 #pragma link C++ class Interpolators::Efficiency;
 
+// Utils
+#pragma link C++ namespace PhysUtils;
+
+#pragma link C++ class PhysUtils::Experiment;
 
 // Model plotter
 #pragma link C++ namespace PlotUtils;
