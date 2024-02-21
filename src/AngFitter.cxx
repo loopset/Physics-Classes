@@ -34,11 +34,11 @@ Angular::Fitter::Fitter(const std::vector<TH1D*>& data, double exmin, double exm
         AddData(h, exmin, exmax);
 }
 
-Angular::Fitter::Fitter(Intervals& ivs, double exmin, double exmax)
+Angular::Fitter::Fitter(Intervals* ivs, double exmin, double exmax) : fIvs(ivs)
 {
-    for(auto& h : ivs.GetHistos())
+    for(auto& h : ivs->GetHistos())
         AddData(h, exmin, exmax);
-    fHistos = ivs.GetHistos();
+    fHistos = ivs->GetHistos();
 }
 
 void Angular::Fitter::AddData(TH1D* data, double xmin, double xmax)
@@ -283,14 +283,20 @@ TCanvas* Angular::Fitter::DrawCounts()
     leg->SetNColumns(2);
     // Integral
     auto* mg {new TMultiGraph};
-    mg->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} index;Counts");
+    if(fIvs)
+        mg->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} [#circ];Counts");
+    else
+        mg->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} interval idx;Counts");
     int idx {0};
     for(const auto& [key, counts] : fIgCounts)
     {
         auto* g {new TGraphErrors};
         for(int iv = 0; iv < counts.size(); iv++)
         {
-            g->SetPoint(iv, iv, counts[iv]);
+            double xlabel {static_cast<double>(iv)};
+            if(fIvs)
+                xlabel = fIvs->GetCenter(iv);
+            g->SetPoint(iv, xlabel, counts[iv]);
             g->SetPointError(iv, 0, TMath::Sqrt(counts[iv]));
         }
         // Style
@@ -302,14 +308,21 @@ TCanvas* Angular::Fitter::DrawCounts()
     }
     // Counts
     auto* mc {new TMultiGraph};
-    mc->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} index;Counts");
+    if(fIvs)
+        mc->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} [#circ];Counts");
+    else
+        mc->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} interval idx;Counts");
+
     idx = 0;
     for(const auto& [key, counts] : fSumCounts)
     {
         auto* g {new TGraphErrors};
         for(int iv = 0; iv < counts.size(); iv++)
         {
-            g->SetPoint(iv, iv, counts[iv]);
+            double xlabel {static_cast<double>(iv)};
+            if(fIvs)
+                xlabel = fIvs->GetCenter(iv);
+            g->SetPoint(iv, xlabel, counts[iv]);
             g->SetPointError(iv, 0, TMath::Sqrt(counts[iv]));
         }
         // Style

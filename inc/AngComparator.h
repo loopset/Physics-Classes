@@ -4,6 +4,7 @@
 #include "TCanvas.h"
 #include "TFitResultPtr.h"
 #include "TGraphErrors.h"
+#include "TLegend.h"
 
 #include <string>
 #include <unordered_map>
@@ -36,7 +37,7 @@ public:
     void Print() const;
 
     // Main draw method
-    TCanvas* Draw();
+    TCanvas* Draw(bool withSF = true);
 
     // Draw theoretical and fits
     TCanvas* DrawTheo();
@@ -44,6 +45,7 @@ public:
 private:
     TGraphErrors* ReadTwoFNR(const std::string& file);
     TGraphErrors* GetFitGraph(TGraphErrors* g, TF1* f);
+    TLegend* BuildLegend(double width = 0.25, double height = 0.2);
 };
 } // namespace Angular
 

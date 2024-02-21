@@ -51,3 +51,10 @@ TCanvas* Interpolators::Efficiency::Draw()
     }
     return c;
 }
+
+void Interpolators::Efficiency::SaveAs(const std::string& file)
+{
+    auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
+    for(const auto& [name, eff] : fEff)
+        eff->Write(name.c_str());
+}

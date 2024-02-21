@@ -6,9 +6,11 @@
 #include "TFitResult.h"
 #include "TGraph.h"
 #include "TGraphErrors.h"
+#include "TLegend.h"
 #include "TMultiGraph.h"
 #include "TROOT.h"
 #include "TSpline.h"
+#include "TString.h"
 #include "TVirtualPad.h"
 
 #include "PhysColors.h"
@@ -82,26 +84,44 @@ void Angular::Comparator::Print() const
     std::cout << "······························" << RESET << '\n';
 }
 
-TCanvas* Angular::Comparator::Draw()
+TLegend* Angular::Comparator::BuildLegend(double width, double height)
+{
+    auto* l {new TLegend {width, height}};
+    l->SetFillStyle(0);
+    l->SetBorderSize(0);
+    l->SetTextFont(42);
+    l->SetTextSize(0.04);
+    return l;
+}
+
+TCanvas* Angular::Comparator::Draw(bool withSF)
 {
     // Draw all using a TMultiGraph
     auto* mg {new TMultiGraph};
     mg->SetTitle((fName + " ;#theta_{CM} [#circ];d#sigma / d#Omega [mb / sr]").c_str());
+    // Create a legend
+    auto* leg {BuildLegend()};
     // 1-> Add experimental
     fExp->SetMarkerStyle(25);
     fExp->SetLineWidth(2);
+    leg->AddEntry(fExp, "Exp", "pe");
     mg->Add(fExp, "p");
     // 2-> Add all fitted
-    for(auto& [name, g] : fFit)
+    for(const auto& [name, g] : fFit)
     {
         g->SetLineWidth(2);
-        mg->Add(g, "l plc pmc");
+        TString desc {name};
+        if(withSF)
+            desc += TString::Format(" #Rightarrow SF = %.2f", fRes[name]->Value(0));
+        leg->AddEntry(g, desc, "l");
+        mg->Add(g, "c");
     }
     // Plot
     auto* c {new TCanvas {"cComp", "Theo to exp comp"}};
-    mg->Draw("a");
+    mg->Draw("a plc pmc");
     mg->GetXaxis()->SetLimits(fFitRange.first, fFitRange.second);
     c->cd()->Update();
+    leg->Draw();
     // Somehow GetXaxis sets the selected pad and this causes
     // all posterior DrawClones to be drawn on this canvas
     // reset it!
@@ -114,14 +134,18 @@ TCanvas* Angular::Comparator::DrawTheo()
     // Create multigraph
     auto* mg {new TMultiGraph};
     mg->SetTitle((fName + " models;#theta_{CM} [#circ];d#sigma / d#Omega [mb / sr]").c_str());
+    // Legend
+    auto* leg {BuildLegend()};
     // Add graphs
-    for(auto& [name, g] : fTheo)
+    for(const auto& [name, g] : fTheo)
     {
         g->SetLineWidth(2);
-        mg->Add(g, "l plc");
+        leg->AddEntry(g, name.c_str(), "l");
+        mg->Add(g, "c");
     }
     // Plot
     auto* c {new TCanvas {"cCompTheo", "Theo models"}};
-    mg->Draw("a");
+    mg->Draw("a plc");
+    leg->Draw();
     return c;
 }

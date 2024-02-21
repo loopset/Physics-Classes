@@ -22,6 +22,8 @@ public:
     typedef std::unordered_map<std::string, CountsIv> Counts;
 
 private:
+    // Pointer to Intervals if called through this ctor
+    Intervals* fIvs {};
     std::vector<TH1D*> fHistos {};
     std::vector<Fitters::Data> fData {};
     std::vector<TH1D> fPS {};
@@ -42,7 +44,7 @@ private:
 
 public:
     Fitter(const std::vector<TH1D*>& data, double exmin, double exmax);
-    Fitter(Intervals& ivs, double exmin, double exmax);
+    Fitter(Intervals* ivs, double exmin, double exmax);
 
     // Setters
     void Configure(const std::string& file, const std::vector<TH1D>& ps = {});

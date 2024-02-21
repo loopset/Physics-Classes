@@ -32,6 +32,8 @@ public:
 
     // Others
     TCanvas* Draw();
+
+    void SaveAs(const std::string& file);
 };
 } // namespace Interpolators
 
