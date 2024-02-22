@@ -25,6 +25,8 @@ void Angular::Comparator::Add(const std::string& name, const std::string& file)
     fTheo[name] = ReadTwoFNR(file);
     // Set title
     fTheo[name]->SetTitle(name.c_str());
+    // And add key
+    fKeys.push_back(name);
 }
 
 TGraphErrors* Angular::Comparator::ReadTwoFNR(const std::string& file)
@@ -49,8 +51,9 @@ void Angular::Comparator::Fit(double xmin, double xmax)
     // Set fit range for later
     fFitRange = {xmin, xmax};
     // Fit is based on a TSpline
-    for(const auto& [name, gt] : fTheo)
+    for(const auto& name : fKeys)
     {
+        auto& gt {fTheo[name]};
         auto spline {std::make_unique<TSpline3>("spline", (TGraph*)gt, "b2,e2", 0, 0)};
         auto func {std::make_unique<TF1>(
             "func", [&](double* x, double* p) { return p[0] * spline->Eval(x[0]); }, 0, 180, 1)};
@@ -71,8 +74,9 @@ void Angular::Comparator::Fit(double xmin, double xmax)
 void Angular::Comparator::Print() const
 {
     std::cout << BOLDYELLOW << "···· Comparator for " << fName << " ····" << '\n';
-    for(const auto& [name, res] : fRes)
+    for(const auto& name : fKeys)
     {
+        auto& res {fRes.at(name)};
         std::cout << "-> Model : " << name << '\n';
         std::cout << "   SF    : " << res->Value(0) << " +/- " << res->Error(0) << '\n';
         auto chi2 {res->Chi2()};
@@ -94,7 +98,7 @@ TLegend* Angular::Comparator::BuildLegend(double width, double height)
     return l;
 }
 
-TCanvas* Angular::Comparator::Draw(bool withSF)
+TCanvas* Angular::Comparator::Draw(bool withSF, double offset)
 {
     // Draw all using a TMultiGraph
     auto* mg {new TMultiGraph};
@@ -107,8 +111,9 @@ TCanvas* Angular::Comparator::Draw(bool withSF)
     leg->AddEntry(fExp, "Exp", "pe");
     mg->Add(fExp, "p");
     // 2-> Add all fitted
-    for(const auto& [name, g] : fFit)
+    for(const auto& name : fKeys)
     {
+        auto& g {fFit[name]};
         g->SetLineWidth(2);
         TString desc {name};
         if(withSF)
@@ -117,9 +122,12 @@ TCanvas* Angular::Comparator::Draw(bool withSF)
         mg->Add(g, "c");
     }
     // Plot
-    auto* c {new TCanvas {"cComp", "Theo to exp comp"}};
+    // Canvas counter
+    static int cCompIdx {};
+    auto* c {new TCanvas {TString::Format("cComp%d", cCompIdx), "Theo to exp comp"}};
+    cCompIdx++;
     mg->Draw("a plc pmc");
-    mg->GetXaxis()->SetLimits(fFitRange.first, fFitRange.second);
+    mg->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
     c->cd()->Update();
     leg->Draw();
     // Somehow GetXaxis sets the selected pad and this causes
@@ -137,14 +145,18 @@ TCanvas* Angular::Comparator::DrawTheo()
     // Legend
     auto* leg {BuildLegend()};
     // Add graphs
-    for(const auto& [name, g] : fTheo)
+    for(const auto& name : fKeys)
     {
+        auto& g {fTheo[name]};
         g->SetLineWidth(2);
         leg->AddEntry(g, name.c_str(), "l");
         mg->Add(g, "c");
     }
     // Plot
-    auto* c {new TCanvas {"cCompTheo", "Theo models"}};
+    // Canvas counter
+    static int cTheoIdx {};
+    auto* c {new TCanvas {TString::Format("cTheo%d", cTheoIdx), "Theo models"}};
+    cTheoIdx++;
     mg->Draw("a plc");
     leg->Draw();
     return c;

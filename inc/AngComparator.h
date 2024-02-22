@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 namespace Angular
 {
 class Comparator
@@ -16,6 +17,8 @@ class Comparator
 private:
     std::string fName {};
     TGraphErrors* fExp {};
+    // Vector to hold keys (so they are plotted in the order given by Add())
+    std::vector<std::string> fKeys {};
     std::unordered_map<std::string, TGraphErrors*> fTheo {};
     // Graph fit results from fit
     std::unordered_map<std::string, TGraphErrors*> fFit {};
@@ -37,7 +40,7 @@ public:
     void Print() const;
 
     // Main draw method
-    TCanvas* Draw(bool withSF = true);
+    TCanvas* Draw(bool withSF = true, double offset = 3);
 
     // Draw theoretical and fits
     TCanvas* DrawTheo();
