@@ -2,6 +2,7 @@
 #define AngComparator_h
 
 #include "TCanvas.h"
+#include "TEfficiency.h"
 #include "TFitResultPtr.h"
 #include "TGraphErrors.h"
 #include "TLegend.h"
@@ -25,7 +26,7 @@ private:
     // Fit results, containing SF
     std::unordered_map<std::string, TFitResultPtr> fRes {};
     // Store also fitting range
-    std::pair<double, double> fFitRange {};
+    std::pair<double, double> fFitRange {-1, -1};
 
 public:
     Comparator(const std::string& name, TGraphErrors* exp) : fName(name), fExp((TGraphErrors*)exp->Clone()) {}
@@ -44,6 +45,9 @@ public:
 
     // Draw theoretical and fits
     TCanvas* DrawTheo();
+
+    // Compare to experimental counts
+    TCanvas* ScaleToExp(const std::string& model, double theoSF, TGraphErrors* gcounts, TEfficiency* eff = nullptr);
 
 private:
     TGraphErrors* ReadTwoFNR(const std::string& file);

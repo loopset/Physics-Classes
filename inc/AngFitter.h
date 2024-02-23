@@ -3,6 +3,7 @@
 
 #include "TCanvas.h"
 #include "TFitResult.h"
+#include "TGraphErrors.h"
 #include "TH1.h"
 
 #include "AngIntervals.h"
@@ -54,6 +55,8 @@ public:
     // Getters
     CountsIv GetIgCountsFor(const std::string& peak) const;
     CountsIv GetSumCountsFor(const std::string& peak) const;
+    TGraphErrors* GetIgCountsGraph(const std::string& peak) const;
+    TGraphErrors* GetSumCountsGraph(const std::string& peak) const;
 
     // Main methods
     void Run();

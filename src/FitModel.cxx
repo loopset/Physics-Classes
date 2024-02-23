@@ -201,6 +201,7 @@ void Fitters::Model::Print() const
     std::cout << "-> NGauss : " << fNGauss << '\n';
     std::cout << "-> NVoigt : " << fNVoigt << '\n';
     std::cout << "-> NPS    : " << fNPS << '\n';
+    std::cout << "-> Cte    ? " << std::boolalpha << fCte << '\n';
     std::cout << "-> UseSpline ? " << std::boolalpha << fUseSpline << '\n';
     std::cout << "······························" << RESET << '\n';
 }

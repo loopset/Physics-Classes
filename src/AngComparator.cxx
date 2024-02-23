@@ -2,6 +2,7 @@
 
 #include "TAxis.h"
 #include "TCanvas.h"
+#include "TEfficiency.h"
 #include "TF1.h"
 #include "TFitResult.h"
 #include "TGraph.h"
@@ -17,6 +18,7 @@
 
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 void Angular::Comparator::Add(const std::string& name, const std::string& file)
@@ -114,6 +116,11 @@ TCanvas* Angular::Comparator::Draw(bool withSF, double offset)
     for(const auto& name : fKeys)
     {
         auto& g {fFit[name]};
+        if(!g)
+        {
+            std::cout << "Comparator::Draw(): Fit() has not been called before Draw()!" << '\n';
+            continue;
+        }
         g->SetLineWidth(2);
         TString desc {name};
         if(withSF)
@@ -127,7 +134,8 @@ TCanvas* Angular::Comparator::Draw(bool withSF, double offset)
     auto* c {new TCanvas {TString::Format("cComp%d", cCompIdx), "Theo to exp comp"}};
     cCompIdx++;
     mg->Draw("a plc pmc");
-    mg->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
+    if(fFitRange.first > 0 && fFitRange.second > 0)
+        mg->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
     c->cd()->Update();
     leg->Draw();
     // Somehow GetXaxis sets the selected pad and this causes
@@ -159,5 +167,61 @@ TCanvas* Angular::Comparator::DrawTheo()
     cTheoIdx++;
     mg->Draw("a plc");
     leg->Draw();
+    return c;
+}
+
+TCanvas*
+Angular::Comparator::ScaleToExp(const std::string& model, double theoSF, TGraphErrors* gcounts, TEfficiency* eff)
+{
+    if(!fTheo.count(model))
+        throw std::runtime_error("Comparator::ScaleToExp(): could not localte model " + model);
+    // Clone to avoid any change in model
+    auto theo {(TGraphErrors*)fTheo[model]->Clone()};
+    // Scale to theoSF
+    theo->Scale(theoSF);
+    // Create TMultiGraph to draw it
+    auto* mg {new TMultiGraph};
+    mg->SetTitle((model + ";#theta_{CM} [#circ];d#sigma / d#Omega [mb /sr]").c_str());
+    fTheo[model]->SetLineWidth(2);
+    mg->Add(fTheo[model]);
+    theo->SetLineStyle(2);
+    theo->SetLineWidth(2);
+    mg->Add(theo);
+    // Theoretical function
+    double theoMin {theo->GetPointX(0)};
+    double theoMax {theo->GetPointX(theo->GetN() - 1)};
+    auto* funcTheo {new TF1 {"funcTheo", [=](double* x, double* p) { return theo->Eval(x[0], nullptr, "S"); }, theoMin,
+                             theoMax, 1}};
+    // Counts function
+    double cMin {gcounts->GetPointX(0)};
+    double cMax {gcounts->GetPointX(gcounts->GetN() - 1)};
+    auto* funcC {new TF1 {"funcC",
+                          [=](double* x, double* p)
+                          {
+                              if(x[0] < cMin)
+                                  return 0.;
+                              if(x[0] > cMax)
+                                  return 0.;
+                              return gcounts->Eval(x[0], nullptr, "S");
+                          },
+                          cMin, cMax, 1}};
+    // Divide function!
+    auto* funcDiv {new TF1 {"funcDiv", [=](double* x, double* p) { return funcC->Eval(x[0]) / funcTheo->Eval(x[0]); },
+                            theoMin, theoMax, 1}};
+
+    // Plot!
+    static int cScaleIdx {};
+    auto* c {new TCanvas {TString::Format("cScale%d", cScaleIdx), "Scaling to exp"}};
+    cScaleIdx++;
+    c->DivideSquare(2);
+    c->cd(1);
+    mg->Draw("al plc");
+    c->cd(2);
+    if(eff)
+        eff->Draw("apl");
+    funcDiv->SetNormalized(true);
+    funcDiv->SetTitle("Ratio exp to theo;#theta_{CM} [#circ];N_{exp} / (SF #upoint N_{theo})");
+    funcDiv->SetNpx(1000);
+    funcDiv->Draw((eff) ? "same" : "");
     return c;
 }

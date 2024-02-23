@@ -5,6 +5,10 @@
 #include "TMath.h"
 #include "TString.h"
 
+#include "PhysColors.h"
+
+#include <cmath>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -27,6 +31,17 @@ void Angular::DifferentialXS::Do(const std::string& peak)
         auto eps {fEff->GetPointEff(peak, thetaCM)};
         // 3-> Value!
         auto xs {N[iv] / (fExp->GetNt() * fExp->GetNb() * Omega * eps)};
+        if(!std::isfinite(xs))
+        {
+            std::cout << BOLDRED << "DifferentialXS::Do(): NaN found for " << peak << " at thetaCM = " << thetaCM
+                      << '\n';
+            std::cout << "-> xs    : " << xs << '\n';
+            std::cout << "-> Omega : " << Omega << '\n';
+            std::cout << "-> Eff   : " << eps << '\n';
+            std::cout << "   Skipping point!" << '\n';
+            std::cout << RESET;
+            continue;
+        }
         // 4-> Convert to mb / sr units
         xs *= 1e27;
         // Fill graph

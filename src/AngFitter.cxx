@@ -266,12 +266,51 @@ Angular::Fitter::CountsIv Angular::Fitter::GetIgCountsFor(const std::string& pea
         throw std::invalid_argument("Fitter::GetIgCountsFor(): received not listed peak");
 }
 
+TGraphErrors* Angular::Fitter::GetIgCountsGraph(const std::string& peak) const
+{
+    if(!fIgCounts.count(peak))
+        throw std::runtime_error("Fitter::GetIgCountsGraph(): could not find peak " + peak);
+    const auto& counts {fIgCounts.at(peak)};
+    auto* g {new TGraphErrors};
+    for(int iv = 0; iv < counts.size(); iv++)
+    {
+        double xlabel {static_cast<double>(iv)};
+        if(fIvs)
+            xlabel = fIvs->GetCenter(iv);
+        g->SetPoint(iv, xlabel, counts[iv]);
+        g->SetPointError(iv, 0, TMath::Sqrt(counts[iv]));
+    }
+    // Style
+    g->SetLineWidth(2);
+    return g;
+}
+
 Angular::Fitter::CountsIv Angular::Fitter::GetSumCountsFor(const std::string& peak) const
 {
     if(fSumCounts.count(peak))
         return fSumCounts.at(peak);
     else
         throw std::invalid_argument("Fitter::GetSumCountsFor(): received not listed peak");
+}
+
+TGraphErrors* Angular::Fitter::GetSumCountsGraph(const std::string& peak) const
+{
+    if(!fSumCounts.count(peak))
+        throw std::runtime_error("Fitter::GetSumCountsGraph(): could not find peak " + peak);
+    const auto& counts {fSumCounts.at(peak)};
+    auto* g {new TGraphErrors};
+    for(int iv = 0; iv < counts.size(); iv++)
+    {
+        double xlabel {static_cast<double>(iv)};
+        if(fIvs)
+            xlabel = fIvs->GetCenter(iv);
+        g->SetPoint(iv, xlabel, counts[iv]);
+        g->SetPointError(iv, 0, TMath::Sqrt(counts[iv]));
+    }
+    // Style
+    g->SetLineWidth(2);
+    g->SetLineStyle(2);
+    return g;
 }
 
 TCanvas* Angular::Fitter::DrawCounts()
@@ -290,17 +329,7 @@ TCanvas* Angular::Fitter::DrawCounts()
     int idx {0};
     for(const auto& [key, counts] : fIgCounts)
     {
-        auto* g {new TGraphErrors};
-        for(int iv = 0; iv < counts.size(); iv++)
-        {
-            double xlabel {static_cast<double>(iv)};
-            if(fIvs)
-                xlabel = fIvs->GetCenter(iv);
-            g->SetPoint(iv, xlabel, counts[iv]);
-            g->SetPointError(iv, 0, TMath::Sqrt(counts[iv]));
-        }
-        // Style
-        g->SetLineWidth(2);
+        auto* g {GetIgCountsGraph(key)};
         // Legend
         leg->AddEntry(g, key.c_str(), "lp");
         mg->Add(g);
@@ -316,18 +345,7 @@ TCanvas* Angular::Fitter::DrawCounts()
     idx = 0;
     for(const auto& [key, counts] : fSumCounts)
     {
-        auto* g {new TGraphErrors};
-        for(int iv = 0; iv < counts.size(); iv++)
-        {
-            double xlabel {static_cast<double>(iv)};
-            if(fIvs)
-                xlabel = fIvs->GetCenter(iv);
-            g->SetPoint(iv, xlabel, counts[iv]);
-            g->SetPointError(iv, 0, TMath::Sqrt(counts[iv]));
-        }
-        // Style
-        g->SetLineWidth(2);
-        g->SetLineStyle(2);
+        auto* g {GetSumCountsGraph(key)};
         mc->Add(g);
         idx++;
     }
