@@ -5,6 +5,8 @@
 #include "TFile.h"
 #include "TGraph.h"
 #include "TMath.h"
+#include "TMultiGraph.h"
+#include "TString.h"
 
 #include <memory>
 #include <stdexcept>
@@ -19,6 +21,7 @@ void Interpolators::Efficiency::Add(const std::string& peak, const std::string& 
     if(!eff)
         throw std::runtime_error("Efficiency::Add(): could not read " + name + " key in file " + file);
     // Push to map
+    eff->SetTitle((peak + ";#theta_{CM} [#circ];#epsilon").c_str());
     fEff[peak] = eff;
     // Create graph
     fGraph[peak] = eff->CreateGraph();
@@ -38,16 +41,35 @@ double Interpolators::Efficiency::GetMeanEff(const std::string& peak, double min
     return TMath::Mean(vals.begin(), vals.end());
 }
 
-TCanvas* Interpolators::Efficiency::Draw()
+TCanvas* Interpolators::Efficiency::Draw(bool multigraph)
 {
-    auto* c {new TCanvas {"cEff", "Efficiency canvas"}};
-    c->DivideSquare(fEff.size());
-    int idx {1};
-    for(const auto& [_, g] : fEff)
+    static int cEffIdx {};
+    auto* c {new TCanvas {TString::Format("cEff%d", cEffIdx), "Efficiency canvas"}};
+    cEffIdx++;
+    if(!multigraph)
     {
-        c->cd(idx);
-        g->Draw("apl");
-        idx++;
+        c->DivideSquare(fEff.size());
+        int idx {1};
+        for(const auto& [_, g] : fEff)
+        {
+            c->cd(idx);
+            g->Draw("apl");
+            idx++;
+        }
+    }
+    else
+    {
+        auto* mg {new TMultiGraph};
+        mg->SetTitle(";#theta_{CM} [#circ];#epsilon");
+        for(const auto& [_, eff] : fEff)
+        {
+            // Get new TGraph to keep this classes independent of TMultiGraph
+            auto* g {eff->CreateGraph()};
+            g->SetFillStyle(0);
+            mg->Add(g, "lp");
+        }
+        mg->Draw("apl plc pmc");
+        c->BuildLegend();
     }
     return c;
 }
