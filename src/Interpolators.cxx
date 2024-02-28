@@ -41,10 +41,10 @@ double Interpolators::Efficiency::GetMeanEff(const std::string& peak, double min
     return TMath::Mean(vals.begin(), vals.end());
 }
 
-TCanvas* Interpolators::Efficiency::Draw(bool multigraph)
+TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)
 {
     static int cEffIdx {};
-    auto* c {new TCanvas {TString::Format("cEff%d", cEffIdx), "Efficiency canvas"}};
+    auto* c {new TCanvas {TString::Format("cEff%d", cEffIdx), (title.Length()) ? title : "Interpolators::Efficiency"}};
     cEffIdx++;
     if(!multigraph)
     {

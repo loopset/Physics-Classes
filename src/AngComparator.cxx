@@ -100,7 +100,7 @@ TLegend* Angular::Comparator::BuildLegend(double width, double height)
     return l;
 }
 
-TCanvas* Angular::Comparator::Draw(bool withSF, double offset)
+TCanvas* Angular::Comparator::Draw(const TString& title, bool withSF, double offset)
 {
     // Draw all using a TMultiGraph
     auto* mg {new TMultiGraph};
@@ -131,7 +131,7 @@ TCanvas* Angular::Comparator::Draw(bool withSF, double offset)
     // Plot
     // Canvas counter
     static int cCompIdx {};
-    auto* c {new TCanvas {TString::Format("cComp%d", cCompIdx), "Theo to exp comp"}};
+    auto* c {new TCanvas {TString::Format("cComp%d", cCompIdx), (title.Length()) ? title : "Angular::Comparator"}};
     cCompIdx++;
     mg->Draw("a plc pmc");
     if(fFitRange.first > 0 && fFitRange.second > 0)

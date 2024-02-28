@@ -27,23 +27,12 @@
 #include <utility>
 #include <vector>
 
-Angular::Fitter::Fitter(const std::vector<TH1D*>& data, double exmin, double exmax)
+void Angular::Fitter::AddData(double exmin, double exmax)
 {
-    fHistos = data;
-    for(auto& h : data)
-        AddData(h, exmin, exmax);
-}
-
-Angular::Fitter::Fitter(Intervals* ivs, double exmin, double exmax) : fIvs(ivs)
-{
-    for(auto& h : ivs->GetHistos())
-        AddData(h, exmin, exmax);
-    fHistos = ivs->GetHistos();
-}
-
-void Angular::Fitter::AddData(TH1D* data, double xmin, double xmax)
-{
-    fData.push_back(Fitters::Data {*data, xmin, xmax});
+    fHistos = fIvs->GetHistos();
+    for(auto& h : fHistos)
+        fData.push_back(Fitters::Data {*h, exmin, exmax});
+    std::cout << BOLDGREEN << "-> Range  : [" << exmin << ", " << exmax << "] MeV" << RESET << '\n';
 }
 
 void Angular::Fitter::AddModels()
@@ -102,7 +91,12 @@ void Angular::Fitter::Configure(const std::string& file, const std::vector<TH1D>
     fGlobalFit = *res;
     // Set PS data also
     fPS = ps;
-    // Init models
+    // Init data in range!
+    auto range {f->Get<std::pair<double, double>>("FitRange")};
+    if(!range)
+        throw std::runtime_error("Fitter::Configure(): could not find FitRange in file " + file);
+    AddData(range->first, range->second);
+    // Init models (after initializing data, mandatory)
     AddModels();
 }
 
@@ -149,9 +143,11 @@ void Angular::Fitter::Run()
     ComputeIntegrals();
 }
 
-TCanvas* Angular::Fitter::Draw()
+TCanvas* Angular::Fitter::Draw(const TString& title)
 {
-    auto* c {new TCanvas {"cFitter", "Angular::Fitter"}};
+    static int cFitIdx {};
+    auto* c {new TCanvas {TString::Format("cFitter%d", cFitIdx), (title.Length()) ? title : "Angular::Fitter"}};
+    cFitIdx++;
     c->DivideSquare(fData.size());
     for(int i = 0; i < fData.size(); i++)
     {
@@ -313,9 +309,12 @@ TGraphErrors* Angular::Fitter::GetSumCountsGraph(const std::string& peak) const
     return g;
 }
 
-TCanvas* Angular::Fitter::DrawCounts()
+TCanvas* Angular::Fitter::DrawCounts(const TString& title)
 {
-    auto* c {new TCanvas {"cCounts", "Angular::Fitter counts"}};
+    static int cCountsIdx {};
+    auto* c {
+        new TCanvas {TString::Format("cCounts%d", cCountsIdx), (title.Length()) ? title : "Angular::Fitter counts"}};
+    cCountsIdx++;
     auto* leg {new TLegend {0.2, 0.2}};
     leg->SetTextSize(0.035);
     leg->SetFillStyle(0);

@@ -78,9 +78,11 @@ void Angular::DifferentialXS::DoFor(const std::vector<std::string>& peaks)
         Do(peak);
 }
 
-TCanvas* Angular::DifferentialXS::Draw() const
+TCanvas* Angular::DifferentialXS::Draw(const TString& title) const
 {
-    auto* c {new TCanvas {"cDiffXS", "Differential XS"}};
+    static int cXSIdx {};
+    auto* c {new TCanvas {TString::Format("cXS%d", cXSIdx), (title.Length()) ? title : "Angular::DifferentialXS"}};
+    cXSIdx++;
     c->DivideSquare(fXS.size());
     int idx {1};
     for(const auto& [name, g] : fXS)

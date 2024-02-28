@@ -44,7 +44,7 @@ public:
     TGraphErrors* Get(const std::string& peak) const { return ((fXS.count(peak) ? fXS.at(peak) : nullptr)); }
 
     // Draw method
-    TCanvas* Draw() const;
+    TCanvas* Draw(const TString& title = "") const;
 
 private:
     void Do(const std::string& peak);

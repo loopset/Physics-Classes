@@ -44,8 +44,7 @@ private:
     bool fUseIntegral {};
 
 public:
-    Fitter(const std::vector<TH1D*>& data, double exmin, double exmax);
-    Fitter(Intervals* ivs, double exmin, double exmax);
+    Fitter(Intervals* ivs) : fIvs(ivs) {}
 
     // Setters
     void Configure(const std::string& file, const std::vector<TH1D>& ps = {});
@@ -60,13 +59,13 @@ public:
 
     // Main methods
     void Run();
-    void ComputeIntegrals(int nsigma = 1);
+    void ComputeIntegrals(int nsigma = 2);
 
-    TCanvas* Draw();
-    TCanvas* DrawCounts();
+    TCanvas* Draw(const TString& title = "");
+    TCanvas* DrawCounts(const TString& title = "");
 
 private:
-    void AddData(TH1D* data, double xmin, double xmax);
+    void AddData(double exmin, double exmax);
     void AddModels();
     void ConfigRunner(Fitters::Runner& runner);
     void DoCounts(unsigned int iv, int nsigma);

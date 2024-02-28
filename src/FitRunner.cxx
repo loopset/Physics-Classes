@@ -141,4 +141,7 @@ void Fitters::Runner::Write(const std::string& file) const
     // and now fit result
     TFitResult res {fFitter.Result()};
     f->WriteObject(&res, "FitResult");
+    // And finally fitting range
+    std::pair<double, double> range {fObj.GetData()->GetXLow(), fObj.GetData()->GetXUp()};
+    f->WriteObject(&range, "FitRange");
 }

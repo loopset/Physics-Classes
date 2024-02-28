@@ -31,7 +31,7 @@ public:
     TGraphAsymmErrors* GetGraph(const std::string& peak) const { return fGraph.at(peak); }
 
     // Others
-    TCanvas* Draw(bool multigraph = true);
+    TCanvas* Draw(bool multigraph = true, const TString& title = "");
 
     void SaveAs(const std::string& file);
 };

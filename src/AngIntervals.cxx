@@ -7,6 +7,8 @@
 #include "TMath.h"
 #include "TString.h"
 
+#include <mutex>
+
 Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DModel& model, double step)
 {
     if(step < 0)
@@ -23,6 +25,8 @@ Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DMod
         fHs.push_back(new TH1D {TString::Format("hCM%d", idx),
                                 TString::Format("#theta_{CM} #in [%.2f, %.2f)#circ;E_{x} [MeV]", min, max),
                                 model.fNbinsX, model.fXLow, model.fXUp});
+        fHs.back()->SetDirectory(
+            nullptr); // not added to gROOT list of histograms (avoid warning if creating Intevals in for loop)
         fOmegas.push_back(ComputeSolidAngle(min, max));
         idx++;
     }
@@ -41,15 +45,20 @@ void Angular::Intervals::Fill(double thetaCM, double Ex)
         auto max {fRanges[i].second};
         if(min <= thetaCM && thetaCM < max)
         {
-            fHs[i]->Fill(Ex);
+            {
+                std::lock_guard<std::mutex> lock {fMutex};
+                fHs[i]->Fill(Ex);
+            }
             break;
         }
     }
 }
 
-TCanvas* Angular::Intervals::Draw() const
+TCanvas* Angular::Intervals::Draw(const TString& title) const
 {
-    auto* c {new TCanvas {"cIntervals", "Angular::Intervals canvas"}};
+    static int cIvsIdx {};
+    auto* c {new TCanvas {TString::Format("cIvs%d", cIvsIdx), (title.Length()) ? title : "Angular::Intervals"}};
+    cIvsIdx++;
     c->DivideSquare(fHs.size());
     for(int i = 0; i < fHs.size(); i++)
     {

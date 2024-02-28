@@ -41,7 +41,7 @@ public:
     void Print() const;
 
     // Main draw method
-    TCanvas* Draw(bool withSF = true, double offset = 3);
+    TCanvas* Draw(const TString& title = "", bool withSF = true, double offset = 3);
 
     // Draw theoretical and fits
     TCanvas* DrawTheo();
