@@ -29,15 +29,27 @@ void Angular::DifferentialXS::Do(const std::string& peak)
         auto Omega {fIvs->GetOmega(iv)};
         // 2-> Efficiency
         auto eps {fEff->GetPointEff(peak, thetaCM)};
+        // Skip calculation if N[iv] is below threshold
+        if(N[iv] < fNThresh)
+        {
+            std::cout << BOLDCYAN << "DifferentialXS::Do(): N = " << N[iv] << " < " << fNThresh << " for peak " << peak
+                      << '\n';
+            std::cout << "-> ThetaCM : " << thetaCM << '\n';
+            std::cout << "-> Omega   : " << Omega << '\n';
+            std::cout << "-> Eff     : " << eps << '\n';
+            std::cout << "   Skipping point!" << '\n';
+            std::cout << RESET;
+            continue;
+        }
         // 3-> Value!
         auto xs {N[iv] / (fExp->GetNt() * fExp->GetNb() * Omega * eps)};
         if(!std::isfinite(xs))
         {
-            std::cout << BOLDRED << "DifferentialXS::Do(): NaN found for " << peak << " at thetaCM = " << thetaCM
-                      << '\n';
-            std::cout << "-> xs    : " << xs << '\n';
-            std::cout << "-> Omega : " << Omega << '\n';
-            std::cout << "-> Eff   : " << eps << '\n';
+            std::cout << BOLDRED << "DifferentialXS::Do(): NaN found for " << peak << '\n';
+            std::cout << "-> xs      : " << xs << '\n';
+            std::cout << "-> ThetaCM : " << thetaCM << '\n';
+            std::cout << "-> Omega   : " << Omega << '\n';
+            std::cout << "-> Eff     : " << eps << '\n';
             std::cout << "   Skipping point!" << '\n';
             std::cout << RESET;
             continue;

@@ -25,6 +25,7 @@ void Interpolators::Efficiency::Add(const std::string& peak, const std::string& 
     fEff[peak] = eff;
     // Create graph
     fGraph[peak] = eff->CreateGraph();
+    fGraph[peak]->SetName(name.c_str());
     // Mark X as being already sorted
     fGraph[peak]->SetBit(TGraph::kIsSortedX);
 }

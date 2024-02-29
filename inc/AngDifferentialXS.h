@@ -27,6 +27,9 @@ private:
     // Results
     std::unordered_map<std::string, TGraphErrors*> fXS {};
 
+    // Counts threshold
+    double fNThresh {2};
+
 public:
     DifferentialXS(Intervals* ivs, Fitter* fits, Interpolators::Efficiency* eff, PhysUtils::Experiment* exp)
         : fIvs(ivs),
@@ -42,6 +45,10 @@ public:
     // Getters
     const std::unordered_map<std::string, TGraphErrors*>& GetAll() const { return fXS; }
     TGraphErrors* Get(const std::string& peak) const { return ((fXS.count(peak) ? fXS.at(peak) : nullptr)); }
+    double GetNThresh() const { return fNThresh; }
+
+    // Setters
+    void SetNThresh(double t) { fNThresh = t; }
 
     // Draw method
     TCanvas* Draw(const TString& title = "") const;
