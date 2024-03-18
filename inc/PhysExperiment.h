@@ -15,7 +15,7 @@ private:
 public:
     Experiment(double ntargets, double ntriggers, double div, int ndiv = 1) : fNt(ntargets), fNtriggers(ntriggers)
     {
-        fNdiv = div * ndiv;
+        fNdiv = TMath::Power(div, ndiv);
         fNb = fNtriggers * fNdiv;
     }
     // Getters
