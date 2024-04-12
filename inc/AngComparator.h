@@ -49,6 +49,9 @@ public:
     // Compare to experimental counts
     TCanvas* ScaleToExp(const std::string& model, double theoSF, TGraphErrors* gcounts, TEfficiency* eff = nullptr);
 
+    // Canvas with ratio per point
+    TCanvas* QuotientPerPoint();
+
 private:
     TGraphErrors* ReadTwoFNR(const std::string& file);
     TGraphErrors* GetFitGraph(TGraphErrors* g, TF1* f);

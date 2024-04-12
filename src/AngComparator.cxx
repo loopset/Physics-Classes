@@ -50,6 +50,12 @@ TGraphErrors* Angular::Comparator::GetFitGraph(TGraphErrors* g, TF1* f)
 
 void Angular::Comparator::Fit(double xmin, double xmax)
 {
+    // Set auto range if not passed
+    if(xmin == -1 || xmax == -1)
+    {
+        xmin = fExp->GetPointX(0);
+        xmax = fExp->GetPointX(fExp->GetN() - 1);
+    }
     // Set fit range for later
     fFitRange = {xmin, xmax};
     // Fit is based on a TSpline
@@ -63,7 +69,7 @@ void Angular::Comparator::Fit(double xmin, double xmax)
         func->SetParameters(1);
         func->SetParName(0, "SF");
         // And fit exp to theo!
-        auto res {fExp->Fit(func.get(), "SQN", "", xmin, xmax)};
+        auto res {fExp->Fit(func.get(), "RSQN", "", xmin, xmax)};
         // Add fit graph
         fFit[name] = GetFitGraph(gt, func.get());
         fFit[name]->SetTitle(gt->GetTitle());
@@ -76,6 +82,7 @@ void Angular::Comparator::Fit(double xmin, double xmax)
 void Angular::Comparator::Print() const
 {
     std::cout << BOLDYELLOW << "···· Comparator for " << fName << " ····" << '\n';
+    std::cout << "·· Fitted in range [" << fFitRange.first << ", " << fFitRange.second << "] deg" << '\n';
     for(const auto& name : fKeys)
     {
         auto& res {fRes.at(name)};
@@ -174,7 +181,7 @@ TCanvas*
 Angular::Comparator::ScaleToExp(const std::string& model, double theoSF, TGraphErrors* gcounts, TEfficiency* eff)
 {
     if(!fTheo.count(model))
-        throw std::runtime_error("Comparator::ScaleToExp(): could not localte model " + model);
+        throw std::runtime_error("Comparator::ScaleToExp(): could not locate model " + model);
     // Clone to avoid any change in model
     auto theo {(TGraphErrors*)fTheo[model]->Clone()};
     // Scale to theoSF
@@ -223,5 +230,37 @@ Angular::Comparator::ScaleToExp(const std::string& model, double theoSF, TGraphE
     funcDiv->SetTitle("Ratio exp to theo;#theta_{CM} [#circ];N_{exp} / (SF #upoint N_{theo})");
     funcDiv->SetNpx(1000);
     funcDiv->Draw((eff) ? "same" : "");
+    return c;
+}
+
+TCanvas* Angular::Comparator::QuotientPerPoint()
+{
+    // Create quotients
+    auto* mg {new TMultiGraph};
+    mg->SetTitle("Quotient exp / theo;#theta_{CM} [#circ];Quotient exp / theo");
+    for(const auto& [name, gtheo] : fTheo)
+    {
+        auto* gq {new TGraphErrors};
+        for(int p = 0; p < fExp->GetN(); p++)
+        {
+            auto xexp {fExp->GetPointX(p)};
+            auto yexp {fExp->GetPointY(p)};
+            // Eval theoretical
+            auto ytheo {gtheo->Eval(xexp, nullptr, "S")};
+            auto uq {1. / ytheo * fExp->GetErrorY(p)};
+            // Fill with quotient
+            gq->SetPoint(p, xexp, yexp / ytheo);
+            gq->SetPointError(p, 0, uq);
+        }
+        gq->SetTitle(name.c_str());
+        gq->SetMarkerStyle(24);
+        gq->SetLineWidth(2);
+        mg->Add(gq);
+    }
+    static int cQIdx {};
+    auto* c {new TCanvas {TString::Format("cQuot%d", cQIdx), "Quotient theo to exp"}};
+    cQIdx++;
+    mg->Draw("apl plc pmc");
+    c->BuildLegend();
     return c;
 }
