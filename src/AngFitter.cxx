@@ -222,13 +222,16 @@ void Angular::Fitter::DoCounts(unsigned int iv, int nsigma)
 
 void Angular::Fitter::CountsBySum(const std::string& key, unsigned int iv, int nsigma, TF1* f)
 {
-    // Sum must be done with fitted histogram! Not with raw data
+    // Create a histogram from the interval data to sum counts
     int nbins {static_cast<int>((fData[iv].GetXUp() - fData[iv].GetXLow()) / fData[iv].GetBinWidth())};
     auto* h {new TH1D("htemp", "h for sum", nbins, fData[iv].GetXLow(), fData[iv].GetXUp())};
     for(int bin = 1; bin <= h->GetNbinsX(); bin++)
     {
         auto x {h->GetXaxis()->GetBinCenter(bin)};
-        auto y {f->Eval(x)};
+        // auto y {f->Eval(x)};
+        // WARNING: Contents are filled from the raw data, not from the evaluation of the fitted function
+        // because in that case of course there is a match!!
+        auto y {fData[iv].GetY(bin)};
         h->SetBinContent(bin, y);
     }
     // Set scale according to nsigma
