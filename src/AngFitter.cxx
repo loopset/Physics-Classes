@@ -79,7 +79,10 @@ void Angular::Fitter::AddModels()
 void Angular::Fitter::Configure(const std::string& file, const std::vector<TH1D>& ps)
 {
     std::cout << BOLDGREEN << "---- Angular::Fitter ----" << '\n';
-    std::cout << "-> Config : " << file << RESET << '\n';
+    std::cout << "-> Config : " << file << '\n';
+    std::cout << "-> FreeMean ? " << std::boolalpha << fAllowFreeMean << RESET << '\n';
+    if(fAllowFreeMean)
+        std::cout << BOLDGREEN << "-> MeanRange : " << fFreeMeanRange << " MeV" << RESET << '\n';
     // Open
     auto f {std::make_unique<TFile>(file.c_str())};
     // Read par names
@@ -111,16 +114,23 @@ void Angular::Fitter::ConfigRunner(Fitters::Runner& runner)
         // 1-> Set parameter name
         f.Config().ParSettings(p).SetName(fParNames[p]);
         // 2-> Initial value
-        f.Config().ParSettings(p).SetValue(fGlobalFit.Value(p));
+        auto value {fGlobalFit.Value(p)};
+        f.Config().ParSettings(p).SetValue(value);
         // 3-> Bounds
         double min {};
         double max {};
         fGlobalFit.ParameterBounds(p, min, max);
         if(TString {fParNames[p]}.Contains("_Amp")) // only set bounds for amp
             f.Config().ParSettings(p).SetLimits(min, max);
-        // 4-> Fix: only amp is free
+        // 4-> Fix parameters
         if(!(TString {fParNames[p]}.Contains("_Amp")))
             f.Config().ParSettings(p).Fix();
+        // If requested, allow a slight variation in mean
+        if(fAllowFreeMean && TString {fParNames[p]}.Contains("_Mean"))
+        {
+            f.Config().ParSettings(p).Release();
+            f.Config().ParSettings(p).SetLimits(value - fFreeMeanRange, value + fFreeMeanRange);
+        }
     }
 }
 

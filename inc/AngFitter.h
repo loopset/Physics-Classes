@@ -42,6 +42,9 @@ private:
     // Settings to be sent to fitter
     bool fUseDivisions {true};
     bool fUseIntegral {};
+    // Allow variation of mean of gaussians during interval fit
+    bool fAllowFreeMean {};
+    double fFreeMeanRange {0.5}; // MeV
 
 public:
     Fitter(Intervals* ivs) : fIvs(ivs) {}
@@ -50,6 +53,8 @@ public:
     void Configure(const std::string& file, const std::vector<TH1D>& ps = {});
     void SetUseDivisions(bool use) { fUseDivisions = use; }
     void SetUseIntegral(bool use) { fUseIntegral = use; }
+    void SetAllowFreeMean(bool allow) { fAllowFreeMean = allow; }
+    void SetFreeMeanRange(double range) { fFreeMeanRange = range; }
 
     // Getters
     CountsIv GetIgCountsFor(const std::string& peak) const;
