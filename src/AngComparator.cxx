@@ -8,6 +8,7 @@
 #include "TGraph.h"
 #include "TGraphErrors.h"
 #include "TLegend.h"
+#include "TMath.h"
 #include "TMultiGraph.h"
 #include "TROOT.h"
 #include "TSpline.h"
@@ -63,8 +64,8 @@ void Angular::Comparator::Fit(double xmin, double xmax)
     {
         auto& gt {fTheo[name]};
         auto spline {std::make_unique<TSpline3>("spline", (TGraph*)gt, "b2,e2", 0, 0)};
-        auto func {std::make_unique<TF1>(
-            "func", [&](double* x, double* p) { return p[0] * spline->Eval(x[0]); }, 0, 180, 1)};
+        auto func {
+            std::make_unique<TF1>("func", [&](double* x, double* p) { return p[0] * spline->Eval(x[0]); }, 0, 180, 1)};
         // Set parameters
         func->SetParameters(1);
         func->SetParName(0, "SF");
@@ -120,13 +121,18 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool withSF, double off
     leg->AddEntry(fExp, "Exp", "pe");
     mg->Add(fExp, "p");
     // 2-> Add all fitted
+    bool isTheo {false};
     for(const auto& name : fKeys)
     {
         auto& g {fFit[name]};
         if(!g)
         {
             std::cout << "Comparator::Draw(): Fit() has not been called before Draw()!" << '\n';
-            continue;
+            std::cout << "-> plotting theoretical model!" << '\n';
+            // continue;
+            g = fTheo[name];
+            withSF = false;
+            isTheo = true;
         }
         g->SetLineWidth(2);
         TString desc {name};
@@ -140,9 +146,24 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool withSF, double off
     static int cCompIdx {};
     auto* c {new TCanvas {TString::Format("cComp%d", cCompIdx), (title.Length()) ? title : "Angular::Comparator"}};
     cCompIdx++;
+    if(isTheo)
+    {
+        // Range in Y
+        auto ymin {TMath::MinElement(fExp->GetN(), fExp->GetY())};
+        auto ymax {TMath::MaxElement(fExp->GetN(), fExp->GetY())};
+        mg->SetMinimum(ymin * 0.8);
+        mg->SetMaximum(ymax * 1.2);
+    }
     mg->Draw("a plc pmc");
     if(fFitRange.first > 0 && fFitRange.second > 0)
         mg->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
+    else
+    {
+        // Get range from exp
+        auto xmin {TMath::MinElement(fExp->GetN(), fExp->GetX())};
+        auto xmax {TMath::MaxElement(fExp->GetN(), fExp->GetX())};
+        mg->GetXaxis()->SetLimits(xmin - offset, xmax + offset);
+    }
     c->cd()->Update();
     leg->Draw();
     // Somehow GetXaxis sets the selected pad and this causes
