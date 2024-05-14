@@ -34,12 +34,18 @@ double Interpolators::Efficiency::GetMeanEff(const std::string& peak, double min
 {
     auto* g {fGraph.at(peak)};
     std::vector<double> vals;
-    for(int p = 0; p < g->GetN(); p++)
-    {
-        if(min <= g->GetPointX(p) && g->GetPointX(p) < max)
-            vals.push_back(g->GetPointY(p));
-    }
+    for(auto t = min; t < max; t += fMeanStep)
+        vals.push_back(fGraph.at(peak)->Eval(t, nullptr, "S"));
     return TMath::Mean(vals.begin(), vals.end());
+}
+
+double Interpolators::Efficiency::GetPointUEff(const std::string& peak, double thetaCM) const
+{
+    auto* eff {fEff.at(peak)};
+    // Get bin
+    auto bin {eff->FindFixBin(thetaCM)};
+    // Error as mean of low and up (must be equal in principle)
+    return (eff->GetEfficiencyErrorLow(bin) + eff->GetEfficiencyErrorUp(bin)) / 2;
 }
 
 TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)

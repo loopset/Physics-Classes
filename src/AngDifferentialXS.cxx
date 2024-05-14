@@ -8,7 +8,9 @@
 #include "PhysColors.h"
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -28,7 +30,9 @@ void Angular::DifferentialXS::Do(const std::string& peak)
         // 1-> Solid angle element
         auto Omega {fIvs->GetOmega(iv)};
         // 2-> Efficiency
-        auto eps {fEff->GetPointEff(peak, thetaCM)};
+        auto eps {fEff->GetMeanEff(peak, fIvs->GetLow(iv), fIvs->GetUp(iv))};
+        // std::cout << "Mean eps : " << eps << " puntual : " << fEff->GetPointEff(peak, thetaCM) << '\n';
+        // auto eps {fEff->GetPointEff(peak, thetaCM)};
         // Skip calculation if N[iv] is below threshold
         if(N[iv] < fNThresh)
         {
@@ -59,12 +63,13 @@ void Angular::DifferentialXS::Do(const std::string& peak)
         // Fill graph
         fXS[peak]->SetPoint(fXS[peak]->GetN(), thetaCM, xs);
         // With uncertainty
-        auto unc {Uncertainty(N[iv], fExp->GetNt(), fExp->GetNb(), Omega, eps, thetaCM)};
+        auto unc {Uncertainty(peak, N[iv], fExp->GetNt(), fExp->GetNb(), Omega, eps, thetaCM)};
         fXS[peak]->SetPointError(fXS[peak]->GetN() - 1, 0, unc);
     }
 }
 
-double Angular::DifferentialXS::Uncertainty(double N, double Nt, double Nb, double Omega, double eps, double thetaCM)
+double Angular::DifferentialXS::Uncertainty(const std::string& peak, double N, double Nt, double Nb, double Omega,
+                                            double eps, double thetaCM)
 {
     // 1-> N
     double coeffN {1. / (Nt * Nb * Omega * eps)};
@@ -74,7 +79,7 @@ double Angular::DifferentialXS::Uncertainty(double N, double Nt, double Nb, doub
     double uNb {fExp->GetUNb()};
     // 3-> Eps
     double coeffEps {-N / (Nt * Nb * Omega) / TMath::Power(eps, 2)};
-    double uEps {0};
+    double uEps {fEff->GetPointUEff(peak, thetaCM)};
 
     // Add everything
     double sum {
@@ -106,4 +111,21 @@ TCanvas* Angular::DifferentialXS::Draw(const TString& title) const
         idx++;
     }
     return c;
+}
+
+void Angular::DifferentialXS::Write(const std::string& dir) const
+{
+    // Run for each peak
+    for(const auto& [peak, g] : fXS)
+    {
+        // 1-> Init output file
+        std::ofstream streamer {(dir + peak + "_xs.dat")};
+        if(!streamer)
+            throw std::runtime_error("DifferentialXS::Write: cannot open directory " + dir);
+        // 2-> Push back from graph points
+        for(auto i = 0; i < g->GetN(); i++)
+            streamer << g->GetPointX(i) << "  " << g->GetPointY(i) << "  " << g->GetErrorY(i) << '\n';
+        // 3-> Close
+        streamer.close();
+    }
 }

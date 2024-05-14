@@ -53,9 +53,13 @@ public:
     // Draw method
     TCanvas* Draw(const TString& title = "") const;
 
+    // Write to file
+    void Write(const std::string& dir) const;
+
 private:
     void Do(const std::string& peak);
-    double Uncertainty(double N, double Nt, double Nb, double Omega, double eps, double thetaCM);
+    double
+    Uncertainty(const std::string& peak, double N, double Nt, double Nb, double Omega, double eps, double thetaCM);
 };
 } // namespace Angular
 

@@ -121,19 +121,19 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool withSF, double off
     leg->AddEntry(fExp, "Exp", "pe");
     mg->Add(fExp, "p");
     // 2-> Add all fitted
-    bool isTheo {false};
+    // In case nothing was fitted, add theoretical lines
+    bool isTheo {fFit.size() == 0};
     for(const auto& name : fKeys)
     {
-        auto& g {fFit[name]};
-        if(!g)
+        TGraphErrors* g {};
+        if(isTheo)
         {
-            std::cout << "Comparator::Draw(): Fit() has not been called before Draw()!" << '\n';
-            std::cout << "-> plotting theoretical model!" << '\n';
-            // continue;
             g = fTheo[name];
             withSF = false;
-            isTheo = true;
         }
+        else
+            g = fFit[name];
+
         g->SetLineWidth(2);
         TString desc {name};
         if(withSF)
@@ -146,23 +146,20 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool withSF, double off
     static int cCompIdx {};
     auto* c {new TCanvas {TString::Format("cComp%d", cCompIdx), (title.Length()) ? title : "Angular::Comparator"}};
     cCompIdx++;
+    mg->Draw("a plc pmc");
+    if(fFitRange.first > 0 && fFitRange.second > 0)
+        mg->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
     if(isTheo)
     {
+        // Range in X
+        auto xmin {TMath::MinElement(fExp->GetN(), fExp->GetX())};
+        auto xmax {TMath::MaxElement(fExp->GetN(), fExp->GetX())};
+        mg->GetXaxis()->SetLimits(xmin - offset, xmax + offset);
         // Range in Y
         auto ymin {TMath::MinElement(fExp->GetN(), fExp->GetY())};
         auto ymax {TMath::MaxElement(fExp->GetN(), fExp->GetY())};
         mg->SetMinimum(ymin * 0.8);
         mg->SetMaximum(ymax * 1.2);
-    }
-    mg->Draw("a plc pmc");
-    if(fFitRange.first > 0 && fFitRange.second > 0)
-        mg->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
-    else
-    {
-        // Get range from exp
-        auto xmin {TMath::MinElement(fExp->GetN(), fExp->GetX())};
-        auto xmax {TMath::MaxElement(fExp->GetN(), fExp->GetX())};
-        mg->GetXaxis()->SetLimits(xmin - offset, xmax + offset);
     }
     c->cd()->Update();
     leg->Draw();

@@ -25,10 +25,12 @@ public:
 
     // Getters
     const std::vector<TH1D*> GetHistos() const { return fHs; }
-    double GetCenter(int i) { return (fRanges[i].first + fRanges[i].second) / 2; }
-    double GetOmega(int i) { return fOmegas[i]; }
-    double GetMin() { return fRanges.front().first; }
-    double GetMax() { return fRanges.back().second; }
+    double GetLow(int i) const { return fRanges[i].first; }
+    double GetCenter(int i) const { return (fRanges[i].first + fRanges[i].second) / 2; }
+    double GetUp(int i) const { return fRanges[i].second; }
+    double GetOmega(int i) const { return fOmegas[i]; }
+    double GetMin() const { return fRanges.front().first; }
+    double GetMax() const { return fRanges.back().second; }
 
     // Others
     TCanvas* Draw(const TString& title = "") const;
