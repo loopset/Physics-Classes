@@ -33,6 +33,7 @@
 #pragma link C++ namespace PhysUtils;
 
 #pragma link C++ class PhysUtils::Experiment;
+#pragma link C++ class PhysUtils::Colors;
 
 // Model plotter
 #pragma link C++ namespace PlotUtils;

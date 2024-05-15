@@ -8,6 +8,7 @@
 #include "TLegend.h"
 
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -27,12 +28,14 @@ private:
     std::unordered_map<std::string, TFitResultPtr> fRes {};
     // Store also fitting range
     std::pair<double, double> fFitRange {-1, -1};
+    // To format lines...
+    std::unordered_map<std::string, std::tuple<int, int, int>> fStyles {};
 
 public:
     Comparator(const std::string& name, TGraphErrors* exp) : fName(name), fExp((TGraphErrors*)exp->Clone()) {}
 
     // Main method to add theoretical models
-    void Add(const std::string& name, const std::string& file);
+    void Add(const std::string& name, const std::string& file, int lc = -1, int ls = 1, int lw = 3);
 
     // Fit all models to exp in given range
     void Fit(double xmin = -1, double xmax = -1);
@@ -41,7 +44,7 @@ public:
     void Print() const;
 
     // Main draw method
-    TCanvas* Draw(const TString& title = "", bool withSF = true, double offset = 3);
+    TCanvas* Draw(const TString& title = "", bool logy = false, bool withSF = true, double offset = 3);
 
     // Draw theoretical and fits
     TCanvas* DrawTheo();

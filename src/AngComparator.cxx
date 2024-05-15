@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <string>
 
-void Angular::Comparator::Add(const std::string& name, const std::string& file)
+void Angular::Comparator::Add(const std::string& name, const std::string& file, int lc, int ls, int lw)
 {
     // So far, assume a twofnr file format
     fTheo[name] = ReadTwoFNR(file);
@@ -30,6 +30,8 @@ void Angular::Comparator::Add(const std::string& name, const std::string& file)
     fTheo[name]->SetTitle(name.c_str());
     // And add key
     fKeys.push_back(name);
+    // And line style
+    fStyles[name] = {lc, ls, lw};
 }
 
 TGraphErrors* Angular::Comparator::ReadTwoFNR(const std::string& file)
@@ -108,7 +110,7 @@ TLegend* Angular::Comparator::BuildLegend(double width, double height)
     return l;
 }
 
-TCanvas* Angular::Comparator::Draw(const TString& title, bool withSF, double offset)
+TCanvas* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double offset)
 {
     // Draw all using a TMultiGraph
     auto* mg {new TMultiGraph};
@@ -123,6 +125,7 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool withSF, double off
     // 2-> Add all fitted
     // In case nothing was fitted, add theoretical lines
     bool isTheo {fFit.size() == 0};
+    bool haveCustomColor {};
     for(const auto& name : fKeys)
     {
         TGraphErrors* g {};
@@ -134,7 +137,15 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool withSF, double off
         else
             g = fFit[name];
 
-        g->SetLineWidth(2);
+        // Set styles!
+        auto [lc, ls, lw] {fStyles[name]};
+        if(lc != -1)
+        {
+            g->SetLineColor(lc);
+            haveCustomColor = true;
+        }
+        g->SetLineStyle(ls);
+        g->SetLineWidth(lw);
         TString desc {name};
         if(withSF)
             desc += TString::Format(" #Rightarrow SF = %.2f", fRes[name]->Value(0));
@@ -146,22 +157,30 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool withSF, double off
     static int cCompIdx {};
     auto* c {new TCanvas {TString::Format("cComp%d", cCompIdx), (title.Length()) ? title : "Angular::Comparator"}};
     cCompIdx++;
-    mg->Draw("a plc pmc");
+    if(logy)
+        c->SetLogy();
+    mg->Draw((haveCustomColor) ? "a" : "a plc pmc");
+    // Set ranges
     if(fFitRange.first > 0 && fFitRange.second > 0)
         mg->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
-    if(isTheo)
+    if(isTheo || logy)
     {
-        // Range in X
-        auto xmin {TMath::MinElement(fExp->GetN(), fExp->GetX())};
-        auto xmax {TMath::MaxElement(fExp->GetN(), fExp->GetX())};
-        mg->GetXaxis()->SetLimits(xmin - offset, xmax + offset);
+        if(isTheo)
+        {
+            // Range in X
+            auto xmin {TMath::MinElement(fExp->GetN(), fExp->GetX())};
+            auto xmax {TMath::MaxElement(fExp->GetN(), fExp->GetX())};
+            mg->GetXaxis()->SetLimits(xmin - offset, xmax + offset);
+        }
         // Range in Y
         auto ymin {TMath::MinElement(fExp->GetN(), fExp->GetY())};
         auto ymax {TMath::MaxElement(fExp->GetN(), fExp->GetY())};
-        mg->SetMinimum(ymin * 0.8);
-        mg->SetMaximum(ymax * 1.2);
+        double scaleMin {(logy) ? 0.1 : 0.6};
+        double scaleMax {(logy) ? 10. : 1.3};
+        mg->SetMinimum(ymin * scaleMin);
+        mg->SetMaximum(ymax * scaleMax);
     }
-    c->cd()->Update();
+    c->Update();
     leg->Draw();
     // Somehow GetXaxis sets the selected pad and this causes
     // all posterior DrawClones to be drawn on this canvas

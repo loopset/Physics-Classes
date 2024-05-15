@@ -3,6 +3,9 @@
 
 // This file just defines the preprocessor variables allowing
 // colorized output in std::cout
+#include "TColor.h"
+
+#include <vector>
 #define RESET "\033[0m"
 #define BLACK "\033[30m"              /* Black */
 #define RED "\033[31m"                /* Red */
@@ -20,5 +23,34 @@
 #define BOLDMAGENTA "\033[1m\033[35m" /* Bold Magenta */
 #define BOLDCYAN "\033[1m\033[36m"    /* Bold Cyan */
 #define BOLDWHITE "\033[1m\033[37m"   /* Bold White */
+
+// Class to hold custom colors
+namespace PhysUtils
+{
+class Colors
+{
+private:
+    std::vector<TColor*> fColors {};
+    static Colors* fInstance;
+
+    Colors() { Init(); }
+
+    void Init();
+
+public:
+    static Colors* GetInstance();
+
+    Colors(Colors&) = delete;
+    void operator=(const Colors&) = delete;
+
+    // Custom operator
+    int operator[](int i) const;
+    int Get(int i) { return operator[](i); }
+    void Draw() const;
+};
+} // namespace PhysUtils
+
+// Define a global variable
+#define gPhysColors (PhysUtils::Colors::GetInstance())
 
 #endif
