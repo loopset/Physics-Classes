@@ -367,3 +367,16 @@ TCanvas* Angular::Fitter::DrawCounts(const TString& title)
     leg->Draw();
     return c;
 }
+
+void Angular::Fitter::Write(const std::string& file) const
+{
+    // Save as TGraphs
+    auto* fout {new TFile {file.c_str(), "recreate"}};
+    for(const auto& [peak, _] : fIgCounts)
+    {
+        auto* g {GetIgCountsGraph(peak)};
+        g->SetNameTitle(("g" + peak).c_str(), ("Integral counts for " + peak).c_str());
+        g->Write();
+    }
+    fout->Close();
+}

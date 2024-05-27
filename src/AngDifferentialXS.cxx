@@ -1,6 +1,7 @@
 #include "AngDifferentialXS.h"
 
 #include "TCanvas.h"
+#include "TFile.h"
 #include "TGraphErrors.h"
 #include "TMath.h"
 #include "TString.h"
@@ -113,7 +114,7 @@ TCanvas* Angular::DifferentialXS::Draw(const TString& title) const
     return c;
 }
 
-void Angular::DifferentialXS::Write(const std::string& dir) const
+void Angular::DifferentialXS::Write(const std::string& dir, const std::string& name) const
 {
     // Run for each peak
     for(const auto& [peak, g] : fXS)
@@ -128,4 +129,9 @@ void Angular::DifferentialXS::Write(const std::string& dir) const
         // 3-> Close
         streamer.close();
     }
+    // Save also in root format
+    auto* fout {new TFile {(dir + name + ".root").c_str(), "recreate"}};
+    for(const auto& [peak, g] : fXS)
+        g->Write(("g" + peak).c_str());
+    fout->Close();
 }

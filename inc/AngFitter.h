@@ -69,6 +69,8 @@ public:
     TCanvas* Draw(const TString& title = "");
     TCanvas* DrawCounts(const TString& title = "");
 
+    void Write(const std::string& file) const;
+
 private:
     void AddData(double exmin, double exmax);
     void AddModels();

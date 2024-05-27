@@ -54,7 +54,7 @@ public:
     TCanvas* Draw(const TString& title = "") const;
 
     // Write to file
-    void Write(const std::string& dir) const;
+    void Write(const std::string& dir, const std::string& name = "xs") const;
 
 private:
     void Do(const std::string& peak);

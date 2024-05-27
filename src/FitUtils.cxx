@@ -93,7 +93,7 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
     auto* leg {new TLegend {0.6, 0.6, 0.9, 0.9}};
     leg->SetBorderSize(0);
     leg->SetFillStyle(0);
-    leg->SetTextSize(0.04);
+    leg->SetTextSize(0.045);
     leg->AddEntry(clone, "Experimental", "le");
     // Draw all the other histograms and legend
     DrawGlobalFit(gfit, hfits, leg, labels);
