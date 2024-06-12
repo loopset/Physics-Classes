@@ -8,6 +8,7 @@
 #include "TString.h"
 
 #include "FitPlotter.h"
+#include "FitRunner.h"
 #include "PhysColors.h"
 
 #include <string>
@@ -53,7 +54,8 @@ void Fitters::DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1
 void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model, const Fitters::Runner::Init& initial,
                      const Fitters::Runner::Bounds& bounds, const Fitters::Runner::Fixed& fixed,
                      const std::string& outfile, const std::string& title,
-                     const std::unordered_map<std::string, std::string>& labels)
+                     const std::unordered_map<std::string, std::string>& labels,
+                     const Fitters::Runner::Step& steps)
 {
     std::cout << BOLDCYAN << "++++ Global fit " << title << " ++++" << RESET << '\n';
     // Init data
@@ -66,6 +68,8 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
     runner.SetInitial(initial);
     runner.SetBounds(bounds);
     runner.SetFixed(fixed);
+    if(fixed.size() > 0)
+        runner.SetStep(steps);
     // Run
     runner.Fit();
     // Save

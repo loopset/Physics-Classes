@@ -30,6 +30,7 @@ public:
     double GetXUpEdge(unsigned int i) { return fX[i] + 0.5 * fBinWidth; }
     int GetBin(double x) const;
     double Integral(double xmin, double xmax) const;
+    void Print() const;
 
 private:
     void Fill(const TH1D& h);
