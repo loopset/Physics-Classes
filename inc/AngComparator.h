@@ -7,6 +7,8 @@
 #include "TGraphErrors.h"
 #include "TLegend.h"
 
+#include "PhysExperiment.h"
+
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -49,11 +51,15 @@ public:
     // Draw theoretical and fits
     TCanvas* DrawTheo();
 
-    // Compare to experimental counts
-    TCanvas* ScaleToExp(const std::string& model, double theoSF, TGraphErrors* gcounts, TEfficiency* eff = nullptr);
+    // Compare to experimental counts to check efficiency
+    TCanvas* ScaleToExp(const std::string& model, PhysUtils::Experiment* exp, TGraphErrors* gcounts,
+                        TEfficiency* teff = nullptr, double SF = -1);
 
     // Canvas with ratio per point
     TCanvas* QuotientPerPoint();
+
+    // Retrieve SF
+    double GetSF(const std::string& model);
 
 private:
     TGraphErrors* ReadTwoFNR(const std::string& file);

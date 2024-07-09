@@ -60,6 +60,7 @@ TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)
         for(const auto& [_, g] : fEff)
         {
             c->cd(idx);
+            g->SetLineWidth(2);
             g->Draw("apl");
             idx++;
         }
@@ -72,6 +73,7 @@ TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)
         {
             // Get new TGraph to keep this classes independent of TMultiGraph
             auto* g {eff->CreateGraph()};
+            g->SetLineWidth(2);
             g->SetFillStyle(0);
             mg->Add(g, "lp");
         }

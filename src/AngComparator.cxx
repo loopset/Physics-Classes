@@ -1,11 +1,14 @@
 #include "AngComparator.h"
 
+#include "Rtypes.h"
+
 #include "TAxis.h"
 #include "TCanvas.h"
 #include "TEfficiency.h"
 #include "TF1.h"
 #include "TFitResult.h"
 #include "TGraph.h"
+#include "TGraphAsymmErrors.h"
 #include "TGraphErrors.h"
 #include "TLegend.h"
 #include "TMath.h"
@@ -16,6 +19,7 @@
 #include "TVirtualPad.h"
 
 #include "PhysColors.h"
+#include "PhysExperiment.h"
 
 #include <iostream>
 #include <memory>
@@ -214,59 +218,77 @@ TCanvas* Angular::Comparator::DrawTheo()
     return c;
 }
 
-TCanvas*
-Angular::Comparator::ScaleToExp(const std::string& model, double theoSF, TGraphErrors* gcounts, TEfficiency* eff)
+TCanvas* Angular::Comparator::ScaleToExp(const std::string& model, PhysUtils::Experiment* exp, TGraphErrors* gcounts,
+                                         TEfficiency* teff, double SF)
 {
     if(!fTheo.count(model))
         throw std::runtime_error("Comparator::ScaleToExp(): could not locate model " + model);
-    // Clone to avoid any change in model
-    auto theo {(TGraphErrors*)fTheo[model]->Clone()};
-    // Scale to theoSF
-    theo->Scale(theoSF);
-    // Create TMultiGraph to draw it
-    auto* mg {new TMultiGraph};
-    mg->SetTitle((model + ";#theta_{CM} [#circ];d#sigma / d#Omega [mb /sr]").c_str());
-    fTheo[model]->SetLineWidth(2);
-    mg->Add(fTheo[model]);
-    theo->SetLineStyle(2);
-    theo->SetLineWidth(2);
-    mg->Add(theo);
-    // Theoretical function
-    double theoMin {theo->GetPointX(0)};
-    double theoMax {theo->GetPointX(theo->GetN() - 1)};
-    auto* funcTheo {new TF1 {"funcTheo", [=](double* x, double* p) { return theo->Eval(x[0], nullptr, "S"); }, theoMin,
-                             theoMax, 1}};
-    // Counts function
-    double cMin {gcounts->GetPointX(0)};
-    double cMax {gcounts->GetPointX(gcounts->GetN() - 1)};
-    auto* funcC {new TF1 {"funcC",
-                          [=](double* x, double* p)
-                          {
-                              if(x[0] < cMin)
-                                  return 0.;
-                              if(x[0] > cMax)
-                                  return 0.;
-                              return gcounts->Eval(x[0], nullptr, "S");
-                          },
-                          cMin, cMax, 1}};
-    // Divide function!
-    auto* funcDiv {new TF1 {"funcDiv", [=](double* x, double* p) { return funcC->Eval(x[0]) / funcTheo->Eval(x[0]); },
-                            theoMin, theoMax, 1}};
+    // Get SF
+    double theoSF {1};
+    if(SF != -1)
+        theoSF = SF;
+    else
+    {
+        auto fitSF {GetSF(model)};
+        if(fitSF != -1)
+            theoSF = fitSF;
+    }
+    // Compute binning
+    double bwidth {gcounts->GetPointX(1) - gcounts->GetPointX(0)}; // deg
+    auto* gEff {new TGraphErrors};
+    gEff->SetTitle("Computed");
 
-    // Plot!
+    // And manually set contents
+    for(int p = 0; p < gcounts->GetN(); p++)
+    {
+        auto theta {gcounts->GetPointX(p)};
+        auto thetaMin {theta - bwidth / 2};
+        auto thetaMax {theta + bwidth / 2};
+        auto Omega {TMath::TwoPi() *
+                    (TMath::Cos(thetaMin * TMath::DegToRad()) - TMath::Cos(thetaMax * TMath::DegToRad()))};
+        auto xstheo {fTheo[model]->Eval(theta)};
+        auto N {gcounts->GetPointY(p)};
+        auto denom {exp->GetNb() * exp->GetNt() * theoSF * xstheo * Omega};
+        auto eff {N / denom};
+        eff *= 1e27; // properly convert mb units to cm2 in xs * Nt
+        // Compute uncertainty
+        auto coeffN {theoSF / (exp->GetNb() * exp->GetNt() * xstheo * Omega)};
+        auto uN {TMath::Sqrt(N)};
+        auto coeffNb {-theoSF * N / (exp->GetNt() * Omega * xstheo) / TMath::Power(exp->GetNb(), 2)};
+        auto uNb {exp->GetUNb()};
+        auto ueff {TMath::Sqrt(coeffN * coeffN * uN * uN + coeffNb * coeffNb * uNb * uNb)};
+        ueff *= 1e27;
+        // Fill
+        gEff->SetPoint(p, theta, eff);
+        gEff->SetPointError(p, 0, ueff);
+    }
+
+    // Draw
+    // Counter
     static int cScaleIdx {};
     auto* c {new TCanvas {TString::Format("cScale%d", cScaleIdx), "Scaling to exp"}};
+    // Increase counter
     cScaleIdx++;
-    c->DivideSquare(2);
-    c->cd(1);
-    mg->Draw("al plc");
-    c->cd(2);
-    if(eff)
-        eff->Draw("apl");
-    funcDiv->SetNormalized(true);
-    funcDiv->SetTitle("Ratio exp to theo;#theta_{CM} [#circ];N_{exp} / (SF #upoint N_{theo})");
-    funcDiv->SetNpx(1000);
-    funcDiv->Draw((eff) ? "same" : "");
+    // Create multigraph to draw all together
+    auto* gteff {teff->CreateGraph()};
+    gteff->SetTitle("Simulated");
+
+    auto* mg {new TMultiGraph};
+    mg->SetTitle(TString::Format("Eff. for %s;#theta_{CM} [#circ];#epsilon", model.c_str()));
+    gEff->SetMarkerStyle(24);
+    gEff->SetLineWidth(2);
+    gEff->SetLineColor(kMagenta);
+    mg->Add(gEff);
+    if(teff)
+    {
+        gteff->SetLineWidth(2);
+        gteff->SetLineColor(8);
+        gteff->SetFillStyle(0);
+        mg->Add(gteff);
+    }
+    mg->Draw("apl");
+    c->BuildLegend();
+
     return c;
 }
 
@@ -300,4 +322,16 @@ TCanvas* Angular::Comparator::QuotientPerPoint()
     mg->Draw("apl plc pmc");
     c->BuildLegend();
     return c;
+}
+
+double Angular::Comparator::GetSF(const std::string& model)
+{
+    if(fRes.count(model))
+        return fRes[model]->Parameter(0);
+    else
+    {
+        std::cout << BOLDRED << "Angular::Comparator::GetSF(): cannot get SF because model " << model
+                  << " hasn't been fitted yet" << RESET << '\n';
+        return -1;
+    }
 }
