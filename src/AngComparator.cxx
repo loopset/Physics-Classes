@@ -109,7 +109,6 @@ TLegend* Angular::Comparator::BuildLegend(double width, double height)
     auto* l {new TLegend {width, height}};
     l->SetFillStyle(0);
     l->SetBorderSize(0);
-    l->SetTextFont(42);
     l->SetTextSize(0.045);
     return l;
 }
