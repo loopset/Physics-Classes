@@ -4,6 +4,7 @@
 #include "TCanvas.h"
 #include "TEfficiency.h"
 #include "TGraphAsymmErrors.h"
+#include "TGraphErrors.h"
 
 #include <string>
 #include <unordered_map>
@@ -36,6 +37,29 @@ public:
     TCanvas* Draw(bool multigraph = true, const TString& title = "");
 
     void SaveAs(const std::string& file);
+};
+
+class Sigmas
+{
+private:
+    TGraphErrors* fGraph {};
+
+public:
+    Sigmas() = default;
+    Sigmas(TGraphErrors* gs) : fGraph(gs) {}
+    Sigmas(const std::string& file, const std::string& name = "gsigmas") { Read(file, name); }
+
+    // Write
+    void SaveAs(const std::string& file, const std::string& name = "gsigmas");
+    // Read
+    void Read(const std::string& file, const std::string& name = "gsigmas");
+
+    // Main functions
+    double Eval(double Ex) { return fGraph->Eval(Ex); }
+
+    void Draw();
+
+    TGraphErrors* GetGraph() const { return fGraph; }
 };
 } // namespace Interpolators
 

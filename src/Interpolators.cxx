@@ -4,6 +4,7 @@
 #include "TEfficiency.h"
 #include "TFile.h"
 #include "TGraph.h"
+#include "TGraphErrors.h"
 #include "TMath.h"
 #include "TMultiGraph.h"
 #include "TString.h"
@@ -88,4 +89,30 @@ void Interpolators::Efficiency::SaveAs(const std::string& file)
     auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
     for(const auto& [name, eff] : fEff)
         eff->Write(name.c_str());
+}
+
+void Interpolators::Sigmas::SaveAs(const std::string& file, const std::string& name)
+{
+    auto fout {std::make_unique<TFile>(file.c_str(), "recreate")};
+    fGraph->Write(name.c_str());
+}
+
+void Interpolators::Sigmas::Read(const std::string& file, const std::string& name)
+{
+    auto fin {std::make_unique<TFile>(file.c_str())};
+    fGraph = fin->Get<TGraphErrors>(name.c_str());
+    if(!fGraph)
+        throw std::runtime_error("Interpolators::Sigmas::Read(): cannot load " + name + " in file " + file);
+}
+
+void Interpolators::Sigmas::Draw()
+{
+    static int cSigmas {};
+    auto* c {new TCanvas {TString::Format("cSigmas%d", cSigmas), "Interpolators::Sigmas canvas"}};
+    cSigmas++;
+    fGraph->SetTitle(";E_{x} [MeV];#sigma_{E} [MeV]");
+    fGraph->SetLineWidth(2);
+    fGraph->SetLineColor(8);
+    fGraph->SetMarkerStyle(24);
+    fGraph->Draw("apl");
 }

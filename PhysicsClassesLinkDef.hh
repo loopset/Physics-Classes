@@ -28,6 +28,7 @@
 #pragma link C++ namespace Interpolators;
 
 #pragma link C++ class Interpolators::Efficiency;
+#pragma link C++ class Interpolators::Sigmas;
 
 // Utils
 #pragma link C++ namespace PhysUtils;
@@ -42,5 +43,10 @@
 #pragma link C++ class PlotUtils::ModelPointers;
 #pragma link C++ class PlotUtils::ModelPlotter;
 
+// CALIBRATION
+#pragma link C++ namespace Calibration;
+
+#pragma link C++ class Calibration::Source;
+#pragma link C++ class Calibration::Runner;
 
 #endif
