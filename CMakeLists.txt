@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE) # force require this standard
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 #ROOT
-find_package(ROOT 6.20 CONFIG REQUIRED COMPONENTS MathCore Physics)
+find_package(ROOT 6.20 CONFIG REQUIRED COMPONENTS MathCore Physics Spectrum)
 include(${ROOT_USE_FILE})
 
 #Add headers
