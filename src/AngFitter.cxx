@@ -18,6 +18,7 @@
 #include "FitRunner.h"
 #include "PhysColors.h"
 
+#include <cmath>
 #include <ios>
 #include <iostream>
 #include <memory>
@@ -235,14 +236,16 @@ void Angular::Fitter::CountsBySum(const std::string& key, unsigned int iv, int n
     // Create a histogram from the interval data to sum counts
     int nbins {static_cast<int>((fData[iv].GetXUp() - fData[iv].GetXLow()) / fData[iv].GetBinWidth())};
     auto* h {new TH1D("htemp", "h for sum", nbins, fData[iv].GetXLow(), fData[iv].GetXUp())};
-    for(int bin = 1; bin <= h->GetNbinsX(); bin++)
+    for(int histbin = 1; histbin <= h->GetNbinsX(); histbin++)
     {
-        auto x {h->GetXaxis()->GetBinCenter(bin)};
+        auto x {h->GetXaxis()->GetBinCenter(histbin)};
         // auto y {f->Eval(x)};
         // WARNING: Contents are filled from the raw data, not from the evaluation of the fitted function
         // because in that case of course there is a match!!
-        auto y {fData[iv].GetY(bin)};
-        h->SetBinContent(bin, y);
+        // Must convert to inner binning of each data element
+        auto inbin {fData[iv].GetBin(x)};
+        auto y {fData[iv].GetY(inbin)};
+        h->SetBinContent(histbin, y);
     }
     // Set scale according to nsigma
     double scale {};

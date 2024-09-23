@@ -120,7 +120,7 @@ void Angular::DifferentialXS::Write(const std::string& dir, const std::string& n
     for(const auto& [peak, g] : fXS)
     {
         // 1-> Init output file
-        std::ofstream streamer {(dir + peak + "_xs.dat")};
+        std::ofstream streamer {(dir + peak + "_" + name + ".dat")};
         if(!streamer)
             throw std::runtime_error("DifferentialXS::Write: cannot open directory " + dir);
         // 2-> Push back from graph points
