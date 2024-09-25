@@ -31,6 +31,7 @@
 void Angular::Fitter::AddData(double exmin, double exmax)
 {
     fHistos = fIvs->GetHistos();
+    fHistosPS = fIvs->GetHistosPS();
     for(auto& h : fHistos)
         fData.push_back(Fitters::Data {*h, exmin, exmax});
     std::cout << BOLDGREEN << "-> Range  : [" << exmin << ", " << exmax << "] MeV" << RESET << '\n';
@@ -63,13 +64,20 @@ void Angular::Fitter::AddModels()
             ncte++;
     }
     // Assert nps matches size of passed data
-    if(fPS.size() != nps)
-        throw std::runtime_error("Fitter::AddModels(): parsed nps does not match size of std::vector<TH1D>");
+    if(fHistosPS.size() != nps)
+        throw std::runtime_error(
+            "Angular::Fitter::AddModels(): parsed nps does not match size of fHistosPS from Angular::Intervals!");
     // Assert ncte = 0 or 1
     if(ncte > 1)
-        throw std::runtime_error("Fitter::AddModels(): parsed ncte is greater than 1");
+        throw std::runtime_error("Angular::Fitter::AddModels(): parsed ncte is greater than 1");
     for(int i = 0; i < fData.size(); i++)
-        fModels.push_back(Fitters::Model {ngauss, nvoigt, fPS, (bool)ncte});
+    {
+        // Build PS vector
+        std::vector<TH1D> vps;
+        for(auto& hps : fHistosPS)
+            vps.push_back(*hps[i]);
+        fModels.push_back(Fitters::Model {ngauss, nvoigt, vps, (bool)ncte});
+    }
     // Print
     std::cout << BOLDGREEN << "-> NGauss : " << ngauss << RESET << '\n';
     std::cout << BOLDGREEN << "-> NVoigt : " << nvoigt << RESET << '\n';
@@ -77,7 +85,7 @@ void Angular::Fitter::AddModels()
     std::cout << BOLDGREEN << "-> Cte    ? " << std::boolalpha << (bool)ncte << RESET << '\n';
 }
 
-void Angular::Fitter::Configure(const std::string& file, const std::vector<TH1D>& ps)
+void Angular::Fitter::Configure(const std::string& file)
 {
     std::cout << BOLDGREEN << "---- Angular::Fitter ----" << '\n';
     std::cout << "-> Config : " << file << '\n';
@@ -93,8 +101,6 @@ void Angular::Fitter::Configure(const std::string& file, const std::vector<TH1D>
     // And fit result
     auto* res {f->Get<TFitResult>("FitResult")};
     fGlobalFit = *res;
-    // Set PS data also
-    fPS = ps;
     // Init data in range!
     auto range {f->Get<std::pair<double, double>>("FitRange")};
     if(!range)

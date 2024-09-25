@@ -3,6 +3,8 @@
 #include "Rtypes.h"
 
 #include "TCanvas.h"
+#include "TFile.h"
+#include "TFitResult.h"
 #include "THStack.h"
 #include "TLegend.h"
 #include "TString.h"
@@ -11,8 +13,10 @@
 #include "FitRunner.h"
 #include "PhysColors.h"
 
+#include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 void Fitters::TreatPS(TH1D* hEx, TH1D* hPS)
 {
@@ -48,14 +52,15 @@ void Fitters::DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1
         idx++;
     }
     stack->Draw("nostack plc pfc same");
+    if(hs.size() > 4)
+        leg->SetNColumns((int)hs.size() / 4 + 1);
     leg->Draw();
 }
 
 void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model, const Fitters::Runner::Init& initial,
                      const Fitters::Runner::Bounds& bounds, const Fitters::Runner::Fixed& fixed,
                      const std::string& outfile, const std::string& title,
-                     const std::unordered_map<std::string, std::string>& labels,
-                     const Fitters::Runner::Step& steps)
+                     const std::unordered_map<std::string, std::string>& labels, const Fitters::Runner::Step& steps)
 {
     std::cout << BOLDCYAN << "++++ Global fit " << title << " ++++" << RESET << '\n';
     // Init data
@@ -94,7 +99,7 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
     h->SetLineWidth(2);
     auto* clone = h->DrawClone("e");
     // Create a legend
-    auto* leg {new TLegend {0.6, 0.6, 0.9, 0.9}};
+    auto* leg {new TLegend {0.5, 0.6, 0.9, 0.9}};
     leg->SetBorderSize(0);
     leg->SetFillStyle(0);
     leg->SetTextSize(0.045);
@@ -103,4 +108,24 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
     DrawGlobalFit(gfit, hfits, leg, labels);
     // End :)
     std::cout << BOLDCYAN << "++++++++++++++++++++++++++++++" << RESET << '\n';
+}
+
+Fitters::Runner::Init Fitters::ReadInit(const std::string& name)
+{
+    auto file {std::make_unique<TFile>(name.c_str())};
+    std::cout << BOLDCYAN << "Fitters::ReadInit() from file : " << name << RESET << '\n';
+    // Read parameter names
+    auto* names {file->Get<std::vector<std::string>>("ParNames")};
+    auto* res {file->Get<TFitResult>("FitResult")};
+
+    Fitters::Runner::Init ret;
+    for(int i = 0; i < names->size(); i++)
+    {
+        // Split
+        auto it {names->at(i).find_first_of("_")};
+        auto key {names->at(i).substr(0, it)};
+        auto val {res->Parameter(i)};
+        ret[key].push_back(val);
+    }
+    return ret;
 }

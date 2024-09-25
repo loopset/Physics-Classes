@@ -27,7 +27,7 @@ private:
     Intervals* fIvs {};
     std::vector<TH1D*> fHistos {};
     std::vector<Fitters::Data> fData {};
-    std::vector<TH1D> fPS {};
+    std::vector<std::vector<TH1D*>> fHistosPS {};
     std::vector<Fitters::Model> fModels {};
     std::vector<TFitResult> fRes;
 
@@ -50,7 +50,7 @@ public:
     Fitter(Intervals* ivs) : fIvs(ivs) {}
 
     // Setters
-    void Configure(const std::string& file, const std::vector<TH1D>& ps = {});
+    void Configure(const std::string& file);
     void SetUseDivisions(bool use) { fUseDivisions = use; }
     void SetUseIntegral(bool use) { fUseIntegral = use; }
     void SetAllowFreeMean(bool allow) { fAllowFreeMean = allow; }
