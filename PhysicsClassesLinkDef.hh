@@ -49,4 +49,10 @@
 #pragma link C++ class Calibration::Source;
 #pragma link C++ class Calibration::Runner;
 
+// OMPs
+#pragma link C++ namespace PhysOMP;
+#pragma link C++ class PhysOMP::OMP;
+#pragma link C++ class PhysOMP::Haixia;
+#pragma link C++ class PhysOMP::Pang;
+
 #endif

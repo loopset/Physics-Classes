@@ -12,6 +12,8 @@
 #include "TMultiGraph.h"
 #include "TString.h"
 
+#include "Math/IntegratorOptions.h"
+
 #include "FitData.h"
 #include "FitModel.h"
 #include "FitPlotter.h"
@@ -223,6 +225,12 @@ void Angular::Fitter::DoCounts(unsigned int iv, int nsigma)
     }
     // 2-> Voigt
     idx = 0;
+    // Issue with Voigts: the default
+    // AdiptiveSingular integration algorithm always
+    // yields errors related with the tolerance
+    // Changing to Gauss provides the same results without warning
+    if(voigt.size())
+        ROOT::Math::IntegratorOneDimOptions::SetDefaultIntegrator("Gauss");
     for(const auto& pars : voigt)
     {
 
@@ -331,7 +339,7 @@ TGraphErrors* Angular::Fitter::GetSumCountsGraph(const std::string& peak) const
     return g;
 }
 
-TCanvas* Angular::Fitter::DrawCounts(const TString& title)
+TCanvas* Angular::Fitter::DrawCounts(bool both, const TString& title)
 {
     static int cCountsIdx {};
     auto* c {
@@ -371,8 +379,16 @@ TCanvas* Angular::Fitter::DrawCounts(const TString& title)
         idx++;
     }
     // Draw
-    mc->Draw("alp plc pmc pfc");
-    mg->Draw("lp plc pmc pfc");
+    if(both)
+    {
+        mc->Draw("alp plc pmc");
+        mg->Draw("lp plc pmc");
+    }
+    else
+    {
+        mg->Draw("alp plc pmc");
+        delete mc;
+    }
     leg->Draw();
     return c;
 }

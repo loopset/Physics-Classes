@@ -67,7 +67,7 @@ public:
     void ComputeIntegrals(int nsigma = 2);
 
     TCanvas* Draw(const TString& title = "");
-    TCanvas* DrawCounts(const TString& title = "");
+    TCanvas* DrawCounts(bool both = true, const TString& title = "");
 
     void Write(const std::string& file) const;
 
