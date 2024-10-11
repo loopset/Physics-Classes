@@ -35,7 +35,8 @@ double Interpolators::Efficiency::GetMeanEff(const std::string& peak, double min
 {
     auto* g {fGraph.at(peak)};
     std::vector<double> vals;
-    for(auto t = min; t < max; t += fMeanStep)
+    double step {TMath::Abs(max - min) / fMeanDiv};
+    for(auto t = min; t <= max; t += step)
         vals.push_back(fGraph.at(peak)->Eval(t, nullptr, "S"));
     return TMath::Mean(vals.begin(), vals.end());
 }

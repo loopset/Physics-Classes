@@ -10,7 +10,9 @@
 
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -114,6 +116,14 @@ TCanvas* Angular::DifferentialXS::Draw(const TString& title) const
     return c;
 }
 
+TGraphErrors* Angular::DifferentialXS::Get(const std::string& peak) const
+{
+    if(fXS.count(peak))
+        return fXS.at(peak);
+    else
+        throw std::runtime_error("Angular::DifferentialXS::Get(): could not locate peak " + peak);
+}
+
 void Angular::DifferentialXS::Write(const std::string& dir, const std::string& name) const
 {
     // Run for each peak
@@ -134,4 +144,21 @@ void Angular::DifferentialXS::Write(const std::string& dir, const std::string& n
     for(const auto& [peak, g] : fXS)
         g->Write(("g" + peak).c_str());
     fout->Close();
+}
+
+void Angular::DifferentialXS::TrimX(const std::string& peak, double xok, bool low)
+{
+    auto* g {Get(peak)};
+    std::set<int, std::greater<int>> toDelete;
+    for(int i = 0; i < g->GetN(); i++)
+    {
+        auto x {g->GetPointX(i)};
+        if((low ? (x < xok) : (x > xok)))
+            toDelete.insert(i);
+    }
+    // And delete
+    std::cout << BOLDRED << "Angular::DifferentialXS::TrimX(): erasing " << toDelete.size() << " points from peak "
+              << peak << RESET << '\n';
+    for(const auto& peak : toDelete)
+        g->RemovePoint(peak);
 }

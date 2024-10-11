@@ -44,7 +44,7 @@ public:
 
     // Getters
     const std::unordered_map<std::string, TGraphErrors*>& GetAll() const { return fXS; }
-    TGraphErrors* Get(const std::string& peak) const { return ((fXS.count(peak) ? fXS.at(peak) : nullptr)); }
+    TGraphErrors* Get(const std::string& peak) const;
     double GetNThresh() const { return fNThresh; }
 
     // Setters
@@ -55,6 +55,9 @@ public:
 
     // Write to file
     void Write(const std::string& dir, const std::string& name = "xs") const;
+
+    // Function to trim some points in X, since in some cases the thetaCM range cannot be the same for all
+    void TrimX(const std::string& peak, double xok, bool low = true);
 
 private:
     void Do(const std::string& peak);

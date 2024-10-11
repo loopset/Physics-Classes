@@ -6,6 +6,7 @@
 #include "TCanvas.h"
 #include "TEfficiency.h"
 #include "TF1.h"
+#include "TFile.h"
 #include "TFitResult.h"
 #include "TGraph.h"
 #include "TGraphAsymmErrors.h"
@@ -20,11 +21,14 @@
 
 #include "PhysColors.h"
 #include "PhysExperiment.h"
+#include "PhysSF.h"
 
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 void Angular::Comparator::Add(const std::string& name, const std::string& file, int lc, int ls, int lw)
 {
@@ -333,4 +337,19 @@ double Angular::Comparator::GetSF(const std::string& model)
                   << " hasn't been fitted yet" << RESET << '\n';
         return -1;
     }
+}
+
+void Angular::Comparator::Write(const std::string& file)
+{
+    auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
+    // Save in two vectors (std::map not supported wo dict in root file)
+    std::vector<std::string> names;
+    std::vector<PhysUtils::SpectroscopicFactor> sfs;
+    for(const auto& [model, res] : fRes)
+    {
+        names.push_back(model);
+        sfs.emplace_back(res->Parameter(0), res->ParError(0), res->Chi2() / res->Ndf(), res->Ndf());
+    }
+    f->WriteObject(&names, "Models");
+    f->WriteObject(&sfs, "SFs");
 }

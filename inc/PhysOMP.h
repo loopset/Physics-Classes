@@ -64,6 +64,12 @@ private:
 public:
     Pang(int Z, int A, double energy, bool isTriton = false);
 };
+
+class KoningDelaroche : public OMP
+{
+public:
+    KoningDelaroche(int Z, int A, double energy);
+};
 } // namespace PhysOMP
 
 #endif

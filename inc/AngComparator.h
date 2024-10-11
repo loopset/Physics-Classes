@@ -61,6 +61,9 @@ public:
     // Retrieve SF
     double GetSF(const std::string& model);
 
+    // Save in file
+    void Write(const std::string& file);
+
 private:
     TGraphErrors* ReadTwoFNR(const std::string& file);
     TGraphErrors* GetFitGraph(TGraphErrors* g, TF1* f);

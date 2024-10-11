@@ -120,8 +120,9 @@ void Angular::Fitter::ConfigRunner(Fitters::Runner& runner)
     auto npars {runner.GetObjective().NDim()};
     for(unsigned int p = 0; p < npars; p++)
     {
+        TString str {fParNames[p]};
         // 1-> Set parameter name
-        f.Config().ParSettings(p).SetName(fParNames[p]);
+        f.Config().ParSettings(p).SetName(str.Data());
         // 2-> Initial value
         auto value {fGlobalFit.Value(p)};
         f.Config().ParSettings(p).SetValue(value);
@@ -129,13 +130,13 @@ void Angular::Fitter::ConfigRunner(Fitters::Runner& runner)
         double min {};
         double max {};
         fGlobalFit.ParameterBounds(p, min, max);
-        if(TString {fParNames[p]}.Contains("_Amp")) // only set bounds for amp
+        if(str.Contains("_Amp")) // only set bounds for amp
             f.Config().ParSettings(p).SetLimits(min, max);
         // 4-> Fix parameters
-        if(!(TString {fParNames[p]}.Contains("_Amp")))
+        if(!(str.Contains("_Amp")))
             f.Config().ParSettings(p).Fix();
         // If requested, allow a slight variation in mean
-        if(fAllowFreeMean && TString {fParNames[p]}.Contains("_Mean"))
+        if(fAllowFreeMean && str.Contains("_Mean"))
         {
             f.Config().ParSettings(p).Release();
             f.Config().ParSettings(p).SetLimits(value - fFreeMeanRange, value + fFreeMeanRange);

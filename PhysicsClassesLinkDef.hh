@@ -35,6 +35,8 @@
 
 #pragma link C++ class PhysUtils::Experiment;
 #pragma link C++ class PhysUtils::Colors;
+#pragma link C++ class PhysUtils::SpectroscopicFactor+;
+#pragma link C++ class std::vector<PhysUtils::SpectroscopicFactor>+;
 
 // Model plotter
 #pragma link C++ namespace PlotUtils;
@@ -54,5 +56,6 @@
 #pragma link C++ class PhysOMP::OMP;
 #pragma link C++ class PhysOMP::Haixia;
 #pragma link C++ class PhysOMP::Pang;
+#pragma link C++ class PhysOMP::KoningDelaroche;
 
 #endif

@@ -15,7 +15,7 @@ class Efficiency
 private:
     std::unordered_map<std::string, TEfficiency*> fEff {};
     std::unordered_map<std::string, TGraphAsymmErrors*> fGraph {};
-    double fMeanStep {0.5}; // step in deg to compute mean efficiency
+    int fMeanDiv {5};
 
 public:
     Efficiency() = default;
@@ -32,6 +32,9 @@ public:
     TEfficiency* GetTEfficiency(const std::string& peak) const { return fEff.at(peak); }
     TGraphAsymmErrors* GetGraph(const std::string& peak) const { return fGraph.at(peak); }
     double GetPointUEff(const std::string& peak, double thetaCM) const;
+
+    // Setters
+    void SetMeanDiv(int div) { fMeanDiv = div; }
 
     // Others
     TCanvas* Draw(bool multigraph = true, const TString& title = "");

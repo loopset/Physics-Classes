@@ -27,9 +27,13 @@ Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DMod
     int idx {};
     for(const auto& [min, max] : fRanges)
     {
+        int nbins {model.fNbinsX};
+        double hxmax {model.fXUp};
+        double hxmin {model.fXLow};
         fHs.push_back(new TH1D {TString::Format("hCM%d", idx),
-                                TString::Format("#theta_{CM} #in [%.2f, %.2f)#circ;E_{x} [MeV]", min, max),
-                                model.fNbinsX, model.fXLow, model.fXUp});
+                                TString::Format("#theta_{CM} #in [%.2f, %.2f)#circ;E_{x} [MeV];Counts per %.0f keV",
+                                                min, max, (hxmax - hxmin) / nbins * 1e3),
+                                nbins, hxmin, hxmax});
         fHs.back()->SetDirectory(
             nullptr); // not added to gROOT list of histograms (avoid warning if creating Intevals in for loop)
         fOmegas.push_back(ComputeSolidAngle(min, max));

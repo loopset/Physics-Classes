@@ -94,3 +94,60 @@ PhysOMP::Pang::Pang(int Z, int A, double energy, bool isTriton) : OMP(Z, A, ener
     faw = 0.84;
     fas = faw;
 }
+
+PhysOMP::KoningDelaroche::KoningDelaroche(int Z, int A, double energy) : OMP(Z, A, energy, 1, 1, "KonigDelaroche")
+{
+    // Some parameters
+    double Efermi {-8.4075 + 0.01378 * fA};
+    // Substract fermi energy to proton's
+    fEnergy = fEnergy - Efermi;
+
+    // Coulomb
+    frc = 1.198 + 0.697 * std::pow(fA, -2. / 3) + 12.994 * std::pow(fA, -5. / 3);
+
+    // Declare parameters
+    double v1p {59.30 + 21 * (double)(fN - fZ) / fA - 0.024 * fA};
+    double v2p {0.007067 + 4.23e-6 * fA};
+    double v3p {1.729e-5 + 1.136e-8 * fA};
+    double v4p {7e-9};
+    double vbarc {1.73 / frc * fZ * std::pow(fA, -1. / 3)}; // Coulomb correction
+
+    double w1p {14.667 + 0.009629 * fA};
+    double w2p {73.55 + 0.0795 * fA};
+
+    double d1p {16 - 16 * (double)(fN - fZ) / fA};
+    double d2p {0.018 + 0.003802 / (1 + std::exp((double)(fA - 156.) / 8))};
+    double d3p {11.5};
+
+    double vso1 {5.922 + 0.0030 * fA};
+    double vso2 {0.0040};
+
+    double wso1 {-3.1};
+    double wso2 {160};
+
+    // 1-> Volume real
+    fVr = v1p * (1 - v2p * fEnergy + v3p * std::pow(fEnergy, 2) - v4p * std::pow(fEnergy, 3)) +
+          vbarc * v1p * (v2p - 2 * v3p * fEnergy + 3 * v4p * std::pow(fEnergy, 2));
+    frv = 1.3039 - 0.4054 * std::pow(fA, -1. / 3);
+    fav = 0.6778 - 1.487e-4 * fA;
+
+    // 2-> Volume imaginary
+    fWv = w1p * std::pow(fEnergy, 2) / (std::pow(fEnergy, 2) + std::pow(w2p, 2));
+    frw = frv;
+    faw = fav;
+
+    // 3-> Surface imaginary
+    fWs = d1p * std::pow(fEnergy, 2) * std::exp(-d2p * fEnergy) / (std::pow(fEnergy, 2) + std::pow(d3p, 2));
+    frs = 1.3424 - 0.01585 * std::pow(fA, 1. / 3);
+    fas = 0.5187 + 5.205e-4 * fA;
+
+    // 4-> SO real
+    fVso = vso1 * std::exp(-vso2 * fEnergy);
+    frvso = 1.1854 - 0.647 * std::pow(fA, -1. / 3);
+    favso = 0.59;
+
+    // 5-> SO imaginary
+    fWso = wso1 * std::pow(fEnergy, 2) / (std::pow(fEnergy, 2) + std::pow(wso2, 2));
+    frwso = frvso;
+    fawso = favso;
+}
