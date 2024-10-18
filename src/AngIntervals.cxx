@@ -116,7 +116,10 @@ TCanvas* Angular::Intervals::Draw(const TString& title) const
             hs->SetTitle(TString::Format("%s;E_{x} [MeV]", fHs[i]->GetTitle()));
             hs->Add(fHs[i]);
             for(auto& hps : fHsPS)
+            {
+                hps[i]->SetLineStyle(2);
                 hs->Add(hps[i]);
+            }
             hs->Draw("nostack");
         }
     }
