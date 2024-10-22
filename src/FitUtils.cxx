@@ -18,15 +18,16 @@
 #include <unordered_map>
 #include <vector>
 
-void Fitters::TreatPS(TH1D* hEx, TH1D* hPS)
+void Fitters::TreatPS(TH1D* hEx, TH1D* hPS, int nsmooth, double scale)
 {
     // 1-> Smooth it
-    hPS->Smooth(20);
+    hPS->Smooth(nsmooth);
     // 2-> Scale it to have a reasonable height
     auto intEx {hEx->Integral()};
     auto intPS {hPS->Integral()};
-    double factor {0.1};
-    hPS->Scale(factor * intEx / intPS);
+    if(intPS == 0 || intEx == 0)
+        return;
+    hPS->Scale(scale * intEx / intPS);
 }
 
 void Fitters::DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1D*>& hs, TLegend* leg,

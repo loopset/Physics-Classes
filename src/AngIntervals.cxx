@@ -10,6 +10,7 @@
 
 #include "FitUtils.h"
 
+#include <iostream>
 #include <mutex>
 
 Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DModel& model, double step, int nps)
@@ -88,13 +89,21 @@ void Angular::Intervals::FillPS(int idx, double thetaCM, double Ex, double weigh
     }
 }
 
-void Angular::Intervals::TreatPS()
+void Angular::Intervals::FillConstPS(int idx, TH1D* hps)
+{
+    for(int i = 0; i < fRanges.size(); i++)
+    {
+        fHsPS[idx][i]->Add(hps);
+    }
+}
+
+void Angular::Intervals::TreatPS(int nsmooth, double scale)
 {
     for(auto& hps : fHsPS)
     {
         for(int i = 0; i < hps.size(); i++)
         {
-            Fitters::TreatPS(fHs[i], hps[i]);
+            Fitters::TreatPS(fHs[i], hps[i], nsmooth, scale);
         }
     }
 }
@@ -118,7 +127,7 @@ TCanvas* Angular::Intervals::Draw(const TString& title) const
             for(auto& hps : fHsPS)
             {
                 hps[i]->SetLineStyle(2);
-                hs->Add(hps[i]);
+                hs->Add(hps[i], "hist");
             }
             hs->Draw("nostack");
         }

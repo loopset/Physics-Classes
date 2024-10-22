@@ -24,7 +24,8 @@ public:
     // Setters
     void Fill(double thetaCM, double Ex);
     void FillPS(int idx, double thetaCM, double Ex, double weight);
-    void TreatPS();
+    void FillConstPS(int idx, TH1D* hps);
+    void TreatPS(int nsmooth = 10, double scale = 0.2);
 
     // Getters
     std::vector<TH1D*> GetHistos() const { return fHs; }
