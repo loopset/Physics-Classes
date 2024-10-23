@@ -13,6 +13,13 @@
 #include <stdexcept>
 #include <string>
 
+void Interpolators::Efficiency::AddGraph(const std::string& peak, TEfficiency* eff, const std::string& name)
+{
+    fGraph[peak] = eff->CreateGraph();
+    fGraph[peak]->SetName(name.length() ? name.c_str() : peak.c_str());
+    fGraph[peak]->SetBit(TGraph::kIsSortedX); // mark X to be already sorted
+}
+
 void Interpolators::Efficiency::Add(const std::string& peak, const std::string& file, const std::string& name)
 {
     // Read file
@@ -24,11 +31,16 @@ void Interpolators::Efficiency::Add(const std::string& peak, const std::string& 
     // Push to map
     eff->SetTitle((peak + ";#theta_{CM} [#circ];#epsilon").c_str());
     fEff[peak] = eff;
+    fEff[peak]->SetTitle(peak.c_str());
     // Create graph
-    fGraph[peak] = eff->CreateGraph();
-    fGraph[peak]->SetName(name.c_str());
-    // Mark X as being already sorted
-    fGraph[peak]->SetBit(TGraph::kIsSortedX);
+    AddGraph(peak, eff, name);
+}
+
+void Interpolators::Efficiency::Add(const std::string& peak, TEfficiency* eff)
+{
+    fEff[peak] = eff;
+    fEff[peak]->SetTitle(peak.c_str());
+    AddGraph(peak, eff);
 }
 
 double Interpolators::Efficiency::GetMeanEff(const std::string& peak, double min, double max) const

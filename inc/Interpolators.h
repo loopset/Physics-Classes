@@ -25,6 +25,7 @@ public:
     };
     // Main method to add more peaks
     void Add(const std::string& peak, const std::string& file, const std::string& name = "eff");
+    void Add(const std::string& peak, TEfficiency* eff);
 
     // Getters
     double GetPointEff(const std::string& peak, double thetaCM) const { return fGraph.at(peak)->Eval(thetaCM); }
@@ -40,6 +41,9 @@ public:
     TCanvas* Draw(bool multigraph = true, const TString& title = "");
 
     void SaveAs(const std::string& file);
+
+private:
+    void AddGraph(const std::string& peak, TEfficiency* eff, const std::string& name = "");
 };
 
 class Sigmas

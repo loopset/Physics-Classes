@@ -3,14 +3,15 @@
 #include "ROOT/RDF/HistoModels.hxx"
 
 #include "TCanvas.h"
+#include "TF1.h"
 #include "TH1.h"
 #include "THStack.h"
 #include "TMath.h"
 #include "TString.h"
+#include "TVirtualPad.h"
 
 #include "FitUtils.h"
 
-#include <iostream>
 #include <mutex>
 
 Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DModel& model, double step, int nps)
@@ -89,14 +90,6 @@ void Angular::Intervals::FillPS(int idx, double thetaCM, double Ex, double weigh
     }
 }
 
-void Angular::Intervals::FillConstPS(int idx, TH1D* hps)
-{
-    for(int i = 0; i < fRanges.size(); i++)
-    {
-        fHsPS[idx][i]->Add(hps);
-    }
-}
-
 void Angular::Intervals::TreatPS(int nsmooth, double scale)
 {
     for(auto& hps : fHsPS)
@@ -117,6 +110,7 @@ TCanvas* Angular::Intervals::Draw(const TString& title) const
     for(int i = 0; i < fHs.size(); i++)
     {
         c->cd(i + 1);
+        bool withFuncs {};
         if(fHsPS.size() == 0)
             fHs[i]->Draw();
         else
@@ -131,6 +125,22 @@ TCanvas* Angular::Intervals::Draw(const TString& title) const
             }
             hs->Draw("nostack");
         }
+        // Draw fitted functions if any
+        int color {1};
+        for(auto* f : *(fHs[i]->GetListOfFunctions()))
+        {
+            if(color == 10)
+                color++;
+            if(f)
+            {
+                ((TF1*)f)->SetLineColor(color);
+                f->Draw("same");
+                withFuncs = true;
+                color++;
+            }
+        }
+        if(withFuncs)
+            gPad->BuildLegend();
     }
     return c;
 }

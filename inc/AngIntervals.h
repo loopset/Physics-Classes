@@ -3,6 +3,7 @@
 #include "ROOT/RDF/HistoModels.hxx"
 
 #include "TCanvas.h"
+#include "TH1.h"
 
 #include <mutex>
 #include <utility>
@@ -24,7 +25,19 @@ public:
     // Setters
     void Fill(double thetaCM, double Ex);
     void FillPS(int idx, double thetaCM, double Ex, double weight);
-    void FillConstPS(int idx, TH1D* hps);
+    // Templates are defined in class header
+    // Otherwise we get a linking error!
+    template <typename T>
+    void FillConstPS(int ps, T* hf)
+    {
+        for(int i = 0; i < fRanges.size(); i++)
+            fHsPS[ps][i]->Add(hf);
+    }
+    template <typename T>
+    void FillIntervalPS(int ps, int iv, T* hf)
+    {
+        fHsPS[ps][iv]->Add(hf);
+    }
     void TreatPS(int nsmooth = 10, double scale = 0.2);
 
     // Getters
@@ -36,6 +49,7 @@ public:
     double GetOmega(int i) const { return fOmegas[i]; }
     double GetMin() const { return fRanges.front().first; }
     double GetMax() const { return fRanges.back().second; }
+    int GetSize() const { return fRanges.size(); }
 
     // Others
     TCanvas* Draw(const TString& title = "") const;
