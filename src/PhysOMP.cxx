@@ -36,6 +36,37 @@ void PhysOMP::OMP::Print() const
     std::cout << "   awso : " << fawso << RESET << '\n';
 }
 
+PhysOMP::Daehnick::Daehnick(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "Daehnick")
+{
+    // Using option L in paper: NON-RELATIVISTIC KINEMATICS
+    double beta {-std::pow(fEnergy / 100, 2)};
+    auto mu {[](double N)
+             {
+                 double ret;
+                 for(const auto& m : {8, 20, 28, 50, 82, 126})
+                     ret += std::exp(-1 * std::pow((m - N) / 2, 2));
+                 return ret;
+             }};
+    // Coulomb
+    frc = 1.3;
+    // Real volume
+    fVr = 88.5 - 0.26 * fEnergy + 0.88 * fZ * std::pow(fA, -1. / 3);
+    frv = 1.17;
+    fav = 0.709 + 0.0017 * fEnergy;
+    // Imaginary volume
+    fWv = (12.2 + 0.026 * fEnergy) * (1 - std::exp(beta));
+    frw = 1.325;
+    faw = 0.53 + 0.07 * std::pow(fA, 1. / 3) - 0.04 * mu(fN);
+    // Imaginary surface
+    fWs = (12.2 + 0.026 * fEnergy) * std::exp(beta);
+    frs = frw;
+    fas = faw;
+    // Real spin-orbit
+    fVso = 7.33 - 0.029 * fEnergy;
+    frvso = 1.07;
+    favso = 0.66;
+}
+
 PhysOMP::Haixia::Haixia(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "Haixia")
 {
     // Coulomb
@@ -92,6 +123,49 @@ PhysOMP::Pang::Pang(int Z, int A, double energy, bool isTriton) : OMP(Z, A, ener
     frw = rww + rw0 * std::pow(fA, -1. / 3);
     frs = frw;
     faw = 0.84;
+    fas = faw;
+}
+
+
+PhysOMP::HT1p::HT1p(int Z, int A, double energy, bool isTriton) : OMP(Z, A, energy, 2, 3, "HT1p"), fIsTriton(isTriton)
+{
+    // Change Z of target if is triton
+    if(fIsTriton)
+        fTargetZ = 1;
+    // Coulomb
+    frc = 1.3;
+    // Correction to energy
+    double Rc {frc * std::pow(fA, 1. / 3)};
+    double Ec {6 * (fIsTriton ? 1 : 2) * fZ * 1.44 / (5 * Rc)};
+
+    // Real volume
+    double V0 {155.1};
+    double Ve {-0.678};
+    fVr = V0 + Ve * (fEnergy - Ec);
+    double r0 {0.920};
+    double r00 {0.108};
+    double r0e {0.0031};
+    frv = r0 + (r00 + r0e * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
+    fav = 0.792;
+
+    // Imaginary volume
+    double Wv0 {33.1};
+    double Wve0 {156.1};
+    double Wvew {52.4};
+    fWv = Wv0 / (1 + std::exp((Wve0 - (fEnergy - Ec)) / Wvew));
+    double rww {1.43};
+    double rw0 {-0.16};
+    frw = rww + rw0 * std::pow(fA, -1. / 3);
+    faw = 0.801;
+
+    // Imaginary surface
+    double Ws0 {21.8};
+    double Wst {13.1};
+    double epsilon {(double)(fN - fZ) / fA};
+    double Wse0 {30.8};
+    double Wsew {106.4};
+    fWs = (Ws0 + (fIsTriton ? -1 : 1) * Wst * epsilon) / (1 + std::exp(((fEnergy - Ec) - Wse0) / Wsew));
+    frs = frw;
     fas = faw;
 }
 

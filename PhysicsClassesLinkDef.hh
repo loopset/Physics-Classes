@@ -54,8 +54,10 @@
 // OMPs
 #pragma link C++ namespace PhysOMP;
 #pragma link C++ class PhysOMP::OMP;
+#pragma link C++ class PhysOMP::Daehnick;
 #pragma link C++ class PhysOMP::Haixia;
 #pragma link C++ class PhysOMP::Pang;
+#pragma link C++ class PhysOMP::HT1p;
 #pragma link C++ class PhysOMP::KoningDelaroche;
 
 #endif

@@ -50,6 +50,12 @@ public:
     void Print() const;
 };
 
+class Daehnick : public OMP
+{
+public:
+    Daehnick(int Z, int A, double energy);
+};
+
 class Haixia : public OMP
 {
 public:
@@ -63,6 +69,15 @@ private:
 
 public:
     Pang(int Z, int A, double energy, bool isTriton = false);
+};
+
+class HT1p : public OMP
+{
+private:
+    bool fIsTriton {}; //!< Bool to set whether is triton or 3He
+
+public:
+    HT1p(int z, int A, double energy, bool isTrition = false);
 };
 
 class KoningDelaroche : public OMP
