@@ -6,6 +6,7 @@
 #include "TFitResultPtr.h"
 #include "TGraphErrors.h"
 #include "TLegend.h"
+#include "TMultiGraph.h"
 
 #include "PhysExperiment.h"
 
@@ -32,6 +33,8 @@ private:
     std::pair<double, double> fFitRange {-1, -1};
     // To format lines...
     std::unordered_map<std::string, std::tuple<int, int, int>> fStyles {};
+    // Multigraph to be stored in file
+    TMultiGraph* fMulti {};
 
 public:
     Comparator(const std::string& name, TGraphErrors* exp) : fName(name), fExp((TGraphErrors*)exp->Clone()) {}

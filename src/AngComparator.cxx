@@ -113,22 +113,21 @@ TLegend* Angular::Comparator::BuildLegend(double width, double height)
     auto* l {new TLegend {width, height}};
     l->SetFillStyle(0);
     l->SetBorderSize(0);
-    l->SetTextSize(0.045);
     return l;
 }
 
 TCanvas* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double offset)
 {
     // Draw all using a TMultiGraph
-    auto* mg {new TMultiGraph};
-    mg->SetTitle((fName + " ;#theta_{CM} [#circ];d#sigma / d#Omega [mb / sr]").c_str());
+    fMulti = new TMultiGraph;
+    fMulti->SetTitle((fName + " ;#theta_{CM} [#circ];d#sigma / d#Omega [mb / sr]").c_str());
     // Create a legend
     auto* leg {BuildLegend()};
     // 1-> Add experimental
     fExp->SetMarkerStyle(25);
     fExp->SetLineWidth(2);
     leg->AddEntry(fExp, "Exp", "pe");
-    mg->Add(fExp, "p");
+    fMulti->Add(fExp, "p");
     // 2-> Add all fitted
     // In case nothing was fitted, add theoretical lines
     bool isTheo {fFit.size() == 0};
@@ -157,7 +156,7 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF,
         if(withSF)
             desc += TString::Format(" #Rightarrow SF = %.2f", fRes[name]->Value(0));
         leg->AddEntry(g, desc, "l");
-        mg->Add(g, "c");
+        fMulti->Add(g, "c");
     }
     // Plot
     // Canvas counter
@@ -166,10 +165,10 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF,
     cCompIdx++;
     if(logy)
         c->SetLogy();
-    mg->Draw((haveCustomColor) ? "a" : "a plc pmc");
+    fMulti->Draw((haveCustomColor) ? "a" : "a plc pmc");
     // Set ranges
     if(fFitRange.first > 0 && fFitRange.second > 0)
-        mg->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
+        fMulti->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
     if(isTheo || logy)
     {
         if(isTheo)
@@ -177,15 +176,15 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF,
             // Range in X
             auto xmin {TMath::MinElement(fExp->GetN(), fExp->GetX())};
             auto xmax {TMath::MaxElement(fExp->GetN(), fExp->GetX())};
-            mg->GetXaxis()->SetLimits(xmin - offset, xmax + offset);
+            fMulti->GetXaxis()->SetLimits(xmin - offset, xmax + offset);
         }
         // Range in Y
         auto ymin {TMath::MinElement(fExp->GetN(), fExp->GetY())};
         auto ymax {TMath::MaxElement(fExp->GetN(), fExp->GetY())};
         double scaleMin {(logy) ? 0.1 : 0.6};
         double scaleMax {(logy) ? 10. : 1.3};
-        mg->SetMinimum(ymin * scaleMin);
-        mg->SetMaximum(ymax * scaleMax);
+        fMulti->SetMinimum(ymin * scaleMin);
+        fMulti->SetMaximum(ymax * scaleMax);
     }
     c->Update();
     leg->Draw();
@@ -352,4 +351,5 @@ void Angular::Comparator::Write(const std::string& file)
     }
     f->WriteObject(&names, "Models");
     f->WriteObject(&sfs, "SFs");
+    f->WriteObject(fMulti, "MultiGraph");
 }
