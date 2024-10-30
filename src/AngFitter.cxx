@@ -33,7 +33,8 @@
 void Angular::Fitter::AddData(double exmin, double exmax)
 {
     fHistos = fIvs->GetHistos();
-    fHistosPS = fIvs->GetHistosPS();
+    if(!fIgnorePS)
+        fHistosPS = fIvs->GetHistosPS();
     for(auto& h : fHistos)
         fData.push_back(Fitters::Data {*h, exmin, exmax});
     std::cout << BOLDGREEN << "-> Range  : [" << exmin << ", " << exmax << "] MeV" << RESET << '\n';
@@ -66,7 +67,7 @@ void Angular::Fitter::AddModels()
             ncte++;
     }
     // Assert nps matches size of passed data
-    if(fHistosPS.size() != nps)
+    if(!fIgnorePS && (fHistosPS.size() != nps))
         throw std::runtime_error(
             "Angular::Fitter::AddModels(): parsed nps does not match size of fHistosPS from Angular::Intervals!");
     // Assert ncte = 0 or 1
@@ -84,6 +85,8 @@ void Angular::Fitter::AddModels()
     std::cout << BOLDGREEN << "-> NGauss : " << ngauss << RESET << '\n';
     std::cout << BOLDGREEN << "-> NVoigt : " << nvoigt << RESET << '\n';
     std::cout << BOLDGREEN << "-> NPS    : " << nps << RESET << '\n';
+    if(fIgnorePS)
+        std::cout << BOLDRED << "    but set to ignore them!" << RESET << '\n';
     std::cout << BOLDGREEN << "-> Cte    ? " << std::boolalpha << (bool)ncte << RESET << '\n';
 }
 
@@ -107,7 +110,14 @@ void Angular::Fitter::Configure(const std::string& file)
     auto range {f->Get<std::pair<double, double>>("FitRange")};
     if(!range)
         throw std::runtime_error("Fitter::Configure(): could not find FitRange in file " + file);
-    AddData(range->first, range->second);
+    // Determine which range to use
+    if(fManualRange.first != -1 && fManualRange.second != -1)
+    {
+        std::cout << BOLDRED << "Angular::Fitter::Configure(): using manual!" << RESET << '\n';
+        AddData(fManualRange.first, fManualRange.second);
+    }
+    else
+        AddData(range->first, range->second);
     // Init models (after initializing data, mandatory)
     AddModels();
 }

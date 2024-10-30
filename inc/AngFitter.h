@@ -13,6 +13,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 namespace Angular
 {
@@ -45,6 +46,11 @@ private:
     // Allow variation of mean of gaussians during interval fit
     bool fAllowFreeMean {};
     double fFreeMeanRange {0.5}; // MeV
+    // Ignore PSs in fit by intervals
+    // (it is interesing in some cases)
+    bool fIgnorePS {false};
+    // Specify a manual range, do not use one used in config file
+    std::pair<double, double> fManualRange {-1, -1};
 
 public:
     Fitter(Intervals* ivs) : fIvs(ivs) {}
@@ -55,6 +61,8 @@ public:
     void SetUseIntegral(bool use) { fUseIntegral = use; }
     void SetAllowFreeMean(bool allow) { fAllowFreeMean = allow; }
     void SetFreeMeanRange(double range) { fFreeMeanRange = range; }
+    void SetIgnorePS(bool ignore) { fIgnorePS = ignore; }
+    void SetManualRange(double min, double max) { fManualRange = {min, max}; };
 
     // Getters
     CountsIv GetIgCountsFor(const std::string& peak) const;

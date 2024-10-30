@@ -18,9 +18,9 @@ void PhysUtils::Colors::Init()
     // CVD-friendly, defined in https://personal.sron.nl/~pault/#sec:qualitative
 
     std::vector<double> r, g, b;
-    r = {68, 102, 34, 204, 238, 170, 187};
-    g = {119, 204, 136, 187, 102, 51, 187};
-    b = {170, 238, 51, 68, 119, 119, 187};
+    r = {68, 102, 34, 204, 238, 170, 187, 0, 51, 0, 238, 204, 238};
+    g = {119, 204, 136, 187, 102, 51, 187, 119, 187, 153, 119, 51, 51, 187};
+    b = {170, 238, 51, 68, 119, 119, 187, 187, 238, 136, 51, 17, 119, 187};
     for(int c = 0; c < r.size(); c++)
     {
         auto i {TColor::GetFreeColorIndex()};
@@ -40,8 +40,8 @@ void PhysUtils::Colors::Draw() const
     auto* c {new TCanvas {"cPhysColors", "PhysUtils::Colors canvas"}};
     double x1 {0};
     double y1 {0};
-    double x2 {20};
-    double y2 {1};
+    double x2 {10};
+    double y2 {2};
 
     gPad->SetFillColor(0);
     gPad->Clear();
@@ -54,15 +54,17 @@ void PhysUtils::Colors::Draw() const
 
     TBox box;
 
-    // Draw color table boxes.
-    double hs = (y2 - y1) / 1;
-    double ws = (x2 - x1) / fColors.size();
+    // Draw color table boxes
+    int row {};
+    int col {};
+    double hs = 1;
+    double ws = 1;
     for(int i = 0; i < fColors.size(); i++)
     {
-        double xlow = x1 + ws * (i + 0.1);
-        double xup = x1 + ws * (i + 0.9);
-        double ylow = y1 + hs * 0.1;
-        double yup = y1 + hs * 0.9;
+        double xlow = x1 + ws * (row + 0.1);
+        double xup = x1 + ws * (row + 0.9);
+        double ylow = y1 + hs * (col + 0.1);
+        double yup = y1 + hs * (col + 0.9);
         box.SetFillStyle(1001);
         int color {fColors.at(i)->GetNumber()};
         box.SetFillColor(fColors.at(i)->GetNumber());
@@ -75,5 +77,12 @@ void PhysUtils::Colors::Draw() const
         else
             text.SetTextColor(1);
         text.DrawText(0.5 * (xlow + xup), 0.5 * (ylow + yup), TString::Format("%d", i).Data());
+        // Increase counting
+        row++;
+        if(row >= x2)
+        {
+            row = 0;
+            col++;
+        }
     }
 }
