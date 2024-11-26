@@ -56,6 +56,12 @@ public:
     Daehnick(int Z, int A, double energy);
 };
 
+class DA1p : public OMP
+{
+public:
+    DA1p(int Z, int A, double energy);
+};
+
 class Haixia : public OMP
 {
 public:

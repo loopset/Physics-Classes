@@ -97,6 +97,9 @@ void Angular::Fitter::Configure(const std::string& file)
     std::cout << "-> FreeMean ? " << std::boolalpha << fAllowFreeMean << RESET << '\n';
     if(fAllowFreeMean)
         std::cout << BOLDGREEN << "-> MeanRange : " << fFreeMeanRange << " MeV" << RESET << '\n';
+    std::cout << BOLDGREEN << "-> FreeSigma? " << std::boolalpha << fAllowFreeSigma << RESET << '\n';
+    if(fAllowFreeSigma)
+        std::cout << BOLDGREEN << "-> SigmaRange: " << fFreeSigmaRange << " MeV" << RESET << '\n';
     // Open
     auto f {std::make_unique<TFile>(file.c_str())};
     // Read par names
@@ -150,6 +153,12 @@ void Angular::Fitter::ConfigRunner(Fitters::Runner& runner)
         {
             f.Config().ParSettings(p).Release();
             f.Config().ParSettings(p).SetLimits(value - fFreeMeanRange, value + fFreeMeanRange);
+        }
+        // If requested, allow a slight variation in sigma
+        if(fAllowFreeSigma && str.Contains("_Sigma"))
+        {
+            f.Config().ParSettings(p).Release();
+            f.Config().ParSettings(p).SetLimits(value - fFreeSigmaRange, value + fFreeSigmaRange);
         }
     }
 }

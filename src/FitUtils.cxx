@@ -5,8 +5,10 @@
 #include "TCanvas.h"
 #include "TFile.h"
 #include "TFitResult.h"
+#include "TH1.h"
 #include "THStack.h"
 #include "TLegend.h"
+#include "TList.h"
 #include "TString.h"
 
 #include "FitPlotter.h"
@@ -107,6 +109,8 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
     leg->AddEntry(clone, "Experimental", "le");
     // Draw all the other histograms and legend
     DrawGlobalFit(gfit, hfits, leg, labels);
+    // Save to file
+    SaveGlobalFit(outfile, h, gfit, hfits, leg);
     // End :)
     std::cout << BOLDCYAN << "++++++++++++++++++++++++++++++" << RESET << '\n';
 }
@@ -129,4 +133,26 @@ Fitters::Runner::Init Fitters::ReadInit(const std::string& name)
         ret[key].push_back(val);
     }
     return ret;
+}
+
+
+void Fitters::SaveGlobalFit(const std::string& file, TH1D* h, TGraph* g,
+                            const std::unordered_map<std::string, TH1D*>& hs, TLegend* leg)
+{
+    auto f {std::make_unique<TFile>(file.c_str(), "update")};
+    // Save Ex spectrum
+    h->Write("HistoEx");
+    // Global fit
+    g->Write("GraphGlobal");
+    // Individual fits
+    std::vector<std::string> keys;
+    TList vhs; // Cannot be saved in std::vector
+    for(const auto& [key, h] : hs)
+    {
+        keys.push_back(key);
+        vhs.Add(h);
+    }
+    f->WriteObject(&keys, "NamePeaks");
+    f->WriteObject(&vhs, "HistoPeaks");
+    f->WriteObject(leg, "Legend");
 }

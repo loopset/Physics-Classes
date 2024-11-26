@@ -89,6 +89,33 @@ PhysOMP::Haixia::Haixia(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "
     favso = 1.011;
 }
 
+PhysOMP::DA1p::DA1p(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "DA1p")
+{
+    // Coulomb
+    frc = 1.3;
+    // Corrections
+    double Rc {frc * std::pow(fA, 1. / 3)};
+    double Ec {6 * 1 * fZ * 1.44 / (5 * Rc)};
+    // Real volume
+    fVr = 98.9 - 0.279 * (fEnergy - Ec);
+    frv = 1.11 + (-0.167 + 0.00117 * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
+    fav = 0.776;
+    // Imaginary volume
+    double Wv0 {11.5};
+    double Wve0 {18.1};
+    double Wvew {5.97};
+    fWv = Wv0 / (1 + std::exp((Wve0 - (fEnergy - Ec)) / Wvew));
+    frw = 0.561 + (3.07 - 0.00449 * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
+    faw = 0.744;
+    // Imaginary surface
+    double Ws0 {7.56};
+    double Wse0 {14.3};
+    double Wsew {4.55};
+    fWs = Ws0 / (1 + std::exp(((fEnergy - Ec) - Wse0) / Wsew));
+    frs = frw;
+    fas = faw;
+}
+
 PhysOMP::Pang::Pang(int Z, int A, double energy, bool isTriton) : OMP(Z, A, energy, 2, 3, "Pang"), fIsTriton(isTriton)
 {
     // Change Z of target if is triton

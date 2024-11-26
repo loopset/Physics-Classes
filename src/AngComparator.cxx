@@ -338,6 +338,18 @@ double Angular::Comparator::GetSF(const std::string& model)
     }
 }
 
+double Angular::Comparator::GetuSF(const std::string& model)
+{
+    if(fRes.count(model))
+        return fRes[model]->Error(0);
+    else
+    {
+        std::cout << BOLDRED << "Angular::Comparator::GetuSF(): cannot get u(SF) because model " << model
+                  << " hasn't been fitted yet" << RESET << '\n';
+        return -1;
+    }
+}
+
 void Angular::Comparator::Write(const std::string& file)
 {
     auto f {std::make_unique<TFile>(file.c_str(), "recreate")};

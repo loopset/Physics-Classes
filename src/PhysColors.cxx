@@ -4,6 +4,9 @@
 #include "TCanvas.h"
 #include "TText.h"
 
+#include <iostream>
+#include <stdexcept>
+
 PhysUtils::Colors* PhysUtils::Colors::fInstance = nullptr;
 
 PhysUtils::Colors* PhysUtils::Colors::GetInstance()
@@ -18,13 +21,20 @@ void PhysUtils::Colors::Init()
     // CVD-friendly, defined in https://personal.sron.nl/~pault/#sec:qualitative
 
     std::vector<double> r, g, b;
-    r = {68, 102, 34, 204, 238, 170, 187, 0, 51, 0, 238, 204, 238};
-    g = {119, 204, 136, 187, 102, 51, 187, 119, 187, 153, 119, 51, 51, 187};
-    b = {170, 238, 51, 68, 119, 119, 187, 187, 238, 136, 51, 17, 119, 187};
+    r = {68, 102, 34, 204, 238, 170, 187, 0, 51, 0, 238, 204, 238, 187, 87, 150, 228};
+    g = {119, 204, 136, 187, 102, 51, 187, 119, 187, 153, 119, 51, 51, 187, 144, 74, 37};
+    b = {170, 238, 51, 68, 119, 119, 187, 187, 238, 136, 51, 17, 119, 187, 252, 139, 54};
+    if(r.size() != g.size() || r.size() != b.size())
+    {
+        std::cout << "R : " << r.size() << '\n';
+        std::cout << "G : " << g.size() << '\n';
+        std::cout << "B : " << g.size() << '\n';
+        throw std::runtime_error("Physutils::Colors::Init(): vector sizes differ");
+    }
     for(int c = 0; c < r.size(); c++)
     {
         auto i {TColor::GetFreeColorIndex()};
-        fColors.push_back(new TColor(i, r[c] / 256, g[c] / 256, b[c] / 256));
+        fColors.push_back(new TColor(i, r[c] / 255, g[c] / 255, b[c] / 255));
     }
 };
 

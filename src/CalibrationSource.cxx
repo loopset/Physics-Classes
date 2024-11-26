@@ -122,7 +122,7 @@ void Calibration::Source::Add3AlphaUSC()
     fSigmas.push_back({});
     fBR.push_back({});
     // 1--
-    fEnergies.back().push_back(5.338);
+    fEnergies.back().push_back(5.388);
     fSigmas.back().push_back(commonSigma);
     fBR.back().push_back(1.66);
     // 2--

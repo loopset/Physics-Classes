@@ -63,6 +63,7 @@ public:
 
     // Retrieve SF
     double GetSF(const std::string& model);
+    double GetuSF(const std::string& model);
 
     // Save in file
     void Write(const std::string& file);

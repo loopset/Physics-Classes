@@ -46,6 +46,8 @@ private:
     // Allow variation of mean of gaussians during interval fit
     bool fAllowFreeMean {};
     double fFreeMeanRange {0.5}; // MeV
+    bool fAllowFreeSigma {};
+    double fFreeSigmaRange {0.25}; // MeV
     // Ignore PSs in fit by intervals
     // (it is interesing in some cases)
     bool fIgnorePS {false};
@@ -63,6 +65,8 @@ public:
     void SetFreeMeanRange(double range) { fFreeMeanRange = range; }
     void SetIgnorePS(bool ignore) { fIgnorePS = ignore; }
     void SetManualRange(double min, double max) { fManualRange = {min, max}; };
+    void SetAllowFreeSigma(bool allow) { fAllowFreeSigma = allow; }
+    void SetFreeSigmaRange(double range) { fFreeSigmaRange = range; }
 
     // Getters
     CountsIv GetIgCountsFor(const std::string& peak) const;
