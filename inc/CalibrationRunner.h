@@ -64,7 +64,6 @@ private:
     // due to the errors in the X axis! This flag disables them ONLY for the precalibration
     bool fDisableXErrors {};
     // Histograms
-    // Using range (R) of each function is important (to fit subranges of histogram)
     std::string fFitOpts {"0QRM+"};
     std::string fFitOptsDebug {"0RM+"};
 

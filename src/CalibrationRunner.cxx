@@ -15,7 +15,6 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -216,10 +215,13 @@ void Calibration::Runner::DoFineCalibration()
         // Set some limits on parameters to avoid wrong fits
         fGaussFine[name]->SetParLimits(0, 0, 1e8);   // amp
         fGaussFine[name]->SetParLimits(1, min, max); // mean
-        fGaussFine[name]->SetParLimits(2, 0.01, 5);  // sigma c [0, 5] MeV
+        fGaussFine[name]->SetParLimits(2, 0.005, 5); // sigma c [0, 5] MeV
         // And now initial parameters!
         auto [mean, amp] {GetAmpMeanInRange(fHistPre.get(), min, max)};
         fGaussFine[name]->SetParameters(amp, mean, sigmas[s].back());
+        auto bw {fHistPre->GetBinWidth(0)};
+        if(name == "244Cm")
+            fGaussFine[name]->SetParLimits(1, min, mean + 1 * bw);
     }
     // Fit!
     for(auto& [name, f] : fGaussFine)
@@ -302,10 +304,13 @@ void Calibration::Runner::DoFinalPlots()
         // Set some limits on parameters to avoid wrong fits
         fGaussFinal[name]->SetParLimits(0, 0, 1e8);   // amp
         fGaussFinal[name]->SetParLimits(1, min, max); // mean
-        fGaussFinal[name]->SetParLimits(2, 0.01, 5);  // sigma c [0, 5] MeV
+        fGaussFinal[name]->SetParLimits(2, 0.005, 5); // sigma c [0, 5] MeV
         // And now initial parameters!
         auto [mean, amp] {GetAmpMeanInRange(fHistFinal.get(), min, max)};
         fGaussFinal[name]->SetParameters(amp, mean, sigmas[s].back());
+        auto bw {fHistFinal->GetBinWidth(0)};
+        if(name == "244Cm")
+            fGaussFinal[name]->SetParLimits(1, min, mean + 1 * bw);
     }
     // Fit!
     for(auto& [name, f] : fGaussFinal)
