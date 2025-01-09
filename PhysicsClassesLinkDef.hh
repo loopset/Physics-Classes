@@ -35,8 +35,10 @@
 
 #pragma link C++ class PhysUtils::Experiment;
 #pragma link C++ class PhysUtils::Colors;
-#pragma link C++ class PhysUtils::SpectroscopicFactor+;
-#pragma link C++ class std::vector<PhysUtils::SpectroscopicFactor>+;
+#pragma link C++ class PhysUtils::SpectroscopicFactor + ;
+#pragma link C++ class std::vector < PhysUtils::SpectroscopicFactor> + ;
+#pragma link C++ class PhysUtils::State + ;
+#pragma link C++ class std::vector < PhysUtils::State> + ;
 
 // Model plotter
 #pragma link C++ namespace PlotUtils;
