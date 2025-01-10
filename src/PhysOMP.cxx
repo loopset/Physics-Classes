@@ -252,3 +252,48 @@ PhysOMP::KoningDelaroche::KoningDelaroche(int Z, int A, double energy) : OMP(Z, 
     frwso = frvso;
     fawso = favso;
 }
+
+PhysOMP::CH89::CH89(int Z, int A, double energy) : OMP(Z, A, energy, 1, 1, "Chapell-Hill 89")
+{
+
+    // Coulomb
+    frc = 1.24 + 0.12 * std::pow(fA, -1. / 3);
+    // Coulomb energy correction
+    double Rc {frc * std::pow(fA, 1. / 3)};
+    double Ec {6 * 1 * fZ * 1.44 / (5 * Rc)};
+
+    // 1-> Volume real (proton only, sign + in paper)
+    double V0 {52.9};
+    double Ve {-0.299};
+    double Vt {13.1};
+    double Vte {0}; // "we found that Vte is not significantly different from zero"
+    double eps {(double)(fN - fZ) / fA};
+    fVr = V0 + Ve * (fEnergy - Ec) + (Vt - Vte * (fEnergy - Ec)) * eps;
+    frv = 1.25 - 0.225 * std::pow(fA, -1. / 3);
+    fav = 0.69;
+
+    // 2-> Volume imaginary
+    double Wv0 {7.8};
+    double Wve0 {35};
+    double Wvew {16};
+    fWv = Wv0 / (1 + std::exp((Wve0 - (fEnergy - Ec)) / Wvew));
+    frw = 1.33 - 0.42 * std::pow(fA, -1. / 3);
+    faw = 0.69;
+
+    // 3-> Surface imaginary
+    double Ws0 {10};
+    double Wst {18};
+    double Wse0 {36};
+    double Wsew {37};
+    fWs = (Ws0 + Wst * eps) / (1 + std::exp(((fEnergy - Ec) - Wse0) / Wsew));
+    frs = frw;
+    fas = faw;
+
+    // 4-> SO real
+    double Vso0 {5.9};
+    double Vsoe {0};
+    double VsoA {0};
+    fVso = Vso0 + Vsoe * fEnergy + VsoA * std::pow(fA, -1. / 3);
+    frvso = 1.34 - 1.2 * std::pow(fA, -1. / 3);
+    favso = 0.63;
+}

@@ -15,6 +15,7 @@
 #pragma link C++ class Fitters::Objective;
 #pragma link C++ class Fitters::Runner;
 #pragma link C++ class Fitters::Plotter;
+#pragma link C++ class Fitters::Interface;
 
 // ANGULAR
 #pragma link C++ namespace Angular;
@@ -62,5 +63,6 @@
 #pragma link C++ class PhysOMP::Pang;
 #pragma link C++ class PhysOMP::HT1p;
 #pragma link C++ class PhysOMP::KoningDelaroche;
+#pragma link C++ class PhysOMP::CH89;
 
 #endif
