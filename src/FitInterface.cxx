@@ -1,21 +1,28 @@
 #include "FitInterface.h"
 
+#include "TFile.h"
+#include "TGraphErrors.h"
+
+#include "AngComparator.h"
 #include "PhysColors.h"
 
 #include <algorithm>
+#include <functional>
 #include <ios>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
 
-void Fitters::Interface::AddState(const Key& key, const DoubleVec& init)
+void Fitters::Interface::AddState(const Key& key, const DoubleVec& init, const Info& info)
 {
     if(CheckInit(key, init))
     {
         fKeys.push_back(key);
         fInitial.insert({key, init});
+        fLabels.insert({key, info});
     }
 }
 
@@ -84,7 +91,13 @@ void Fitters::Interface::SetSorting()
     // And also the initial guess
     fGuess.clear();
     for(const auto& key : fKeys)
-        fGuess.push_back(fInitial[key][1]);
+    {
+        auto& initial {fInitial[key]};
+        if(initial.size() < 2)
+            fGuess[key] = initial.front();
+        else
+            fGuess[key] = initial[1];
+    }
 }
 
 void Fitters::Interface::SetDefaults()
@@ -104,7 +117,7 @@ void Fitters::Interface::SetDefaults()
             if(i == 1)
             {
                 double offset {0.2};
-                bounds.push_back({fGuess[idx] - offset, fGuess[idx] + offset});
+                bounds.push_back({fGuess[key] - offset, fGuess[key] + offset});
             }
             // 2 -> Sigma
             if(i == 2)
@@ -137,7 +150,7 @@ void Fitters::Interface::SetInitial(const Key& key, unsigned int idx, double val
         initial.at(idx) = val;
         // Update mean guess only if idx == 1
         if(idx == 1)
-            fGuess[GetIdxKey(key)] = val;
+            fGuess[key] = val;
     }
     // else idx is out of bounds for key. could happen if we set a sigma value for a ps, for instance
 }
@@ -185,25 +198,117 @@ unsigned int Fitters::Interface::GetIdxKey(const Key& key) const
 
 double Fitters::Interface::GetGuess(const Key& key) const
 {
-    return fGuess.at(GetIdxKey(key));
+    return fGuess.at(key);
 }
 
 void Fitters::Interface::Print() const
 {
     std::cout << BOLDCYAN << "----- Fitters::Interface -----" << '\n';
-    for(const auto& key : fKeys)
+    if(!fIsRead)
     {
-        const auto& initial {fInitial.at(key)};
-        const auto& bounds {fBounds.at(key)};
-        const auto& fixed {fFix.at(key)};
-        std::cout << "-> " << key << '\n';
-        for(int i = 0; i < initial.size(); i++)
+        for(const auto& key : fKeys)
         {
-            std::cout << "    " << fParNames[i] << '\n';
-            std::cout << "      initial : " << initial[i] << '\n';
-            std::cout << "      bounds  : [" << bounds[i].first << ", " << bounds[i].second << "]" << '\n';
-            std::cout << "      fixed   ? " << std::boolalpha << fixed[i] << '\n';
+            const auto& initial {fInitial.at(key)};
+            const auto& bounds {fBounds.at(key)};
+            const auto& fixed {fFix.at(key)};
+            std::cout << "-> " << key << " : " << fLabels.at(key) << '\n';
+            for(int i = 0; i < initial.size(); i++)
+            {
+                std::cout << "    " << fParNames[i] << '\n';
+                std::cout << "      initial : " << initial[i] << '\n';
+                std::cout << "      bounds  : [" << bounds[i].first << ", " << bounds[i].second << "]" << '\n';
+                std::cout << "      fixed   ? " << std::boolalpha << fixed[i] << '\n';
+            }
+        }
+    }
+    else
+    {
+        for(const auto& key : fKeys)
+        {
+            std::cout << "-> " << key << '\n';
+            std::cout << "    label : " << fLabels.at(key) << '\n';
+            std::cout << "    guess : " << fGuess.at(key) << '\n';
         }
     }
     std::cout << RESET;
+}
+
+void Fitters::Interface::Write(const std::string& file) const
+{
+    auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
+    f->WriteObject(this, "inter");
+}
+
+void Fitters::Interface::CleanNotStates()
+{
+    auto toClean {[this](const std::string& key)
+                  {
+                      auto type {GetType(key)};
+                      if(type == "ps" || type == "cte")
+                          return true;
+                      else
+                          return false;
+                  }};
+    // Vector of keys
+    for(auto it = fKeys.begin(); it != fKeys.end();)
+    {
+        if(toClean(*it))
+            it = fKeys.erase(it);
+        else
+            it++;
+    }
+    // Labels
+    for(auto it = fLabels.begin(); it != fLabels.end();)
+    {
+        if(toClean(it->first))
+            it = fLabels.erase(it);
+        else
+            it++;
+    }
+    // Guesses
+    for(auto it = fGuess.begin(); it != fGuess.end();)
+    {
+        if(toClean(it->first))
+            it = fGuess.erase(it);
+        else
+            it++;
+    }
+}
+
+void Fitters::Interface::Read(const std::string& file)
+{
+    auto f {std::make_unique<TFile>(file.c_str())};
+    auto* inter {f->Get<Fitters::Interface>("inter")};
+    if(!inter)
+        throw std::runtime_error("Fitters::Interface::Read(): cannot read written object");
+    *this = *inter;
+    fIsRead = true;
+    delete inter;
+    // Clean states that are not gaussian or voigt
+    CleanNotStates();
+}
+
+std::string Fitters::Interface::FormatLabel(const std::string& label)
+{
+    auto it {label.find_first_of("+-")};
+    if(it == std::string::npos)
+        return label;
+    auto j {label.substr(0, it)};
+    auto pi {label.substr(it, 1)};
+    int idx {};
+    if(it + 1 < label.length())
+        idx = std::stoi(label.substr(it + 1));
+    return j + "^{" + pi + "}" + (idx ? "_{" + std::to_string(idx) + "}" : "");
+}
+
+void Fitters::Interface::AddAngularDistribution(const Key& key, TGraphErrors* gexp)
+{
+    auto str {key + " = " + FormatLabel(fLabels[key])};
+    fComparators[key] = Angular::Comparator {str, gexp};
+}
+
+void Fitters::Interface::Do(std::function<void(Angular::Comparator& comp)> func)
+{
+    for(const auto& key : fKeys)
+        func(fComparators[key]);
 }

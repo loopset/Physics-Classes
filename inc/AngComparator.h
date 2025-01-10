@@ -37,6 +37,7 @@ private:
     TMultiGraph* fMulti {};
 
 public:
+    Comparator() = default;
     Comparator(const std::string& name, TGraphErrors* exp) : fName(name), fExp((TGraphErrors*)exp->Clone()) {}
 
     // Main method to add theoretical models
