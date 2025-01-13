@@ -1,12 +1,12 @@
 #ifndef AngComparator_h
 #define AngComparator_h
 
-#include "TCanvas.h"
 #include "TEfficiency.h"
 #include "TFitResultPtr.h"
 #include "TGraphErrors.h"
 #include "TLegend.h"
 #include "TMultiGraph.h"
+#include "TPad.h"
 
 #include "PhysExperiment.h"
 
@@ -50,7 +50,8 @@ public:
     void Print() const;
 
     // Main draw method
-    TCanvas* Draw(const TString& title = "", bool logy = false, bool withSF = true, double offset = 3);
+    TPad*
+    Draw(const TString& title = "", bool logy = false, bool withSF = true, double offset = 3, TPad* pad = nullptr);
 
     // Draw theoretical and fits
     TCanvas* DrawTheo();

@@ -1,19 +1,27 @@
 #include "FitInterface.h"
 
+#include "TCanvas.h"
 #include "TFile.h"
 #include "TGraphErrors.h"
+#include "TROOT.h"
+#include "TString.h"
+#include "TSystem.h"
 
 #include "AngComparator.h"
 #include "PhysColors.h"
 
 #include <algorithm>
-#include <functional>
+#include <cmath>
+#include <fstream>
 #include <ios>
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <optional>
+#include <ostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 
 void Fitters::Interface::AddState(const Key& key, const DoubleVec& init, const Info& info)
@@ -53,6 +61,10 @@ bool Fitters::Interface::CheckInit(const Key& key, const DoubleVec& init)
     if(size != fNParsType[type])
         throw std::runtime_error("Fitters::Interface::CheckInit(): " + type + "parameter must have only" +
                                  std::to_string(fNParsType[type]) + " initial values");
+    // Check if it is already in keys
+    auto isRepeated {std::find(fKeys.begin(), fKeys.end(), key) != fKeys.end()};
+    if(isRepeated)
+        throw std::runtime_error("Fitters::Interface::CheckInit(): parameter " + key + " is repeated!");
     if(type == "g")
         fNGaus++;
     else if(type == "v")
@@ -295,10 +307,8 @@ std::string Fitters::Interface::FormatLabel(const std::string& label)
         return label;
     auto j {label.substr(0, it)};
     auto pi {label.substr(it, 1)};
-    int idx {};
-    if(it + 1 < label.length())
-        idx = std::stoi(label.substr(it + 1));
-    return j + "^{" + pi + "}" + (idx ? "_{" + std::to_string(idx) + "}" : "");
+    auto end {label.substr(it + 1)};
+    return j + "^{" + pi + "}" + (end.length() == 1 ? "_{" + end + "}" : " " + end);
 }
 
 void Fitters::Interface::AddAngularDistribution(const Key& key, TGraphErrors* gexp)
@@ -307,8 +317,125 @@ void Fitters::Interface::AddAngularDistribution(const Key& key, TGraphErrors* ge
     fComparators[key] = Angular::Comparator {str, gexp};
 }
 
-void Fitters::Interface::Do(std::function<void(Angular::Comparator& comp)> func)
+void Fitters::Interface::ReadComparatorConfig(const std::string& file)
 {
-    for(const auto& key : fKeys)
-        func(fComparators[key]);
+    // Code partially generated with chatgpt
+    // We could have used ActRoot::InputParser but I dont want
+    // to introduce library dependences
+    std::ifstream streamer(file);
+    if(!streamer)
+        throw std::runtime_error("Fitters::Interface::ReadComparator: cannot open config file");
+
+    std::string currentHeader {"global"};
+    std::string line;
+    while(std::getline(streamer, line))
+    {
+        // Trim whitespace
+        line.erase(0, line.find_first_not_of(" \t"));
+        line.erase(line.find_last_not_of(" \t") + 1);
+
+        // Skip comments and empty lines
+        if(line.empty() || line[0] == '#' || line[0] == '%')
+            continue;
+
+        // Check for headers
+        if(line[0] == '[' && line.back() == ']')
+        {
+            currentHeader = line.substr(1, line.size() - 2); // Extract header name
+            continue;
+        }
+
+        // Treat everything else as a key-value pair
+        auto sep {line.find(':')};
+        if(sep != std::string::npos)
+        {
+            auto key {line.substr(0, sep)};
+            key.erase(0, key.find_first_not_of(" \t"));
+            key.erase(key.find_last_not_of(" \t") + 1);
+
+            auto value {line.substr(sep + 1)};
+            value.erase(0, value.find_first_not_of(" \t"));
+            value.erase(value.find_last_not_of(" \t") + 1);
+
+            fCompConf[currentHeader].push_back({key, value});
+        }
+    }
+}
+
+template <typename T>
+std::optional<T> Fitters::Interface::GetCompDrawOpt(const std::string& opt, const std::string& header)
+{
+    if(!fCompConf.count(header))
+        return std::nullopt;
+    auto& vec {fCompConf[header]};
+    auto it {std::find_if(vec.begin(), vec.end(),
+                          [&](const std::pair<std::string, std::string>& pair) { return pair.first == opt; })};
+    if(it != vec.end())
+        return std::optional<T> {(T)std::stod(it->second)};
+    else
+        return std::nullopt;
+}
+
+void Fitters::Interface::DoComp()
+{
+    // Get general
+    auto logy {GetCompDrawOpt<bool>("logy").value()};
+    auto withSF {GetCompDrawOpt<bool>("withSF").value()};
+    auto offset {GetCompDrawOpt<double>("offset").value()};
+    auto save {GetCompDrawOpt<bool>("save").value()};
+    // Canvas layout
+    // Get number of canvas
+    auto size {(int)fKeys.size()};
+    int npads {size <= 4 ? size : 4}; // pads per canvas
+    auto ncanv {static_cast<int>(std::ceil((double)fKeys.size() / npads))};
+    std::vector<TCanvas*> cs;
+    for(int c = 0; c < ncanv; c++)
+    {
+        cs.push_back(new TCanvas {TString::Format("cComp%d", c), TString::Format("Comp canvas %d", c)});
+        cs.back()->DivideSquare(npads);
+    }
+    // Iterate!
+    int ic {};  // index of canvas
+    int ip {1}; // index of pad
+    for(auto& [state, comp] : fComparators)
+    {
+        // If there are theoretical predictions
+        if(fCompConf.count(state))
+        {
+            for(const auto& [key, file] : fCompConf[state])
+            {
+                // Check whether is file
+                if(file.find("/") != std::string::npos)
+                    comp.Add(key, file);
+            }
+            comp.Fit();
+        }
+        if(ip > npads)
+        {
+            ip = 1;
+            ic++;
+        }
+        // cd into current pad (TVirtualPad)
+        auto* base {cs[ic]->cd(ip)};
+        // cast into TPad
+        auto* pad {dynamic_cast<TPad*>(base)};
+        // Draw!
+        // But first check for local options!
+        auto localLogy {GetCompDrawOpt<bool>("logy", state)};
+        comp.Draw(state, (localLogy ? localLogy.value() : logy), withSF, offset, pad);
+        ip++;
+    }
+    // And save
+    if(save)
+    {
+        gSystem->mkdir("./Outputs");
+        for(int i = 0; i < ncanv; i++)
+        {
+            cs[i]->cd();
+            cs[i]->Modified();
+            cs[i]->Update();
+            cs[i]->SaveAs(TString::Format("./Outputs/ang_%d.png", i));
+        }
+        gROOT->SetSelectedPad(nullptr); // to avoid issues later with DrawClone
+    }
 }

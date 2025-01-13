@@ -5,8 +5,8 @@
 
 #include "AngComparator.h"
 
-#include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -46,7 +46,8 @@ private:
     unsigned int fNPS {};
     bool fCte {};
     // Settings for Angular distribution stage
-    std::map<std::string, Angular::Comparator> fComparators {}; //!
+    std::map<std::string, Angular::Comparator> fComparators {};                           //!
+    std::map<std::string, std::vector<std::pair<std::string, std::string>>> fCompConf {}; //!
 
 public:
     Interface() = default;
@@ -63,7 +64,8 @@ public:
     void EndAddingStates();
     // Angular
     void AddAngularDistribution(const Key& key, TGraphErrors* gexp);
-    void Do(std::function<void(Angular::Comparator& comp)> func);
+    void ReadComparatorConfig(const std::string& file);
+    void DoComp();
 
     // Getters
     const Initial& GetInitial() const { return fInitial; }
@@ -91,6 +93,8 @@ private:
     void SetDefaults();
     void CleanNotStates();
     std::string FormatLabel(const std::string& label);
+    template <typename T>
+    std::optional<T> GetCompDrawOpt(const std::string& opt, const std::string& header = "Draw");
 };
 } // namespace Fitters
 

@@ -116,7 +116,7 @@ TLegend* Angular::Comparator::BuildLegend(double width, double height)
     return l;
 }
 
-TCanvas* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double offset)
+TPad* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double offset, TPad* pad)
 {
     // Draw all using a TMultiGraph
     fMulti = new TMultiGraph;
@@ -159,12 +159,15 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF,
         fMulti->Add(g, "c");
     }
     // Plot
-    // Canvas counter
-    static int cCompIdx {};
-    auto* c {new TCanvas {TString::Format("cComp%d", cCompIdx), (title.Length()) ? title : "Angular::Comparator"}};
-    cCompIdx++;
+    if(!pad)
+    {
+        // Canvas counter
+        static int cCompIdx {};
+        pad = new TCanvas {TString::Format("cComp%d", cCompIdx), (title.Length()) ? title : "Angular::Comparator"};
+        cCompIdx++;
+    }
     if(logy)
-        c->SetLogy();
+        pad->SetLogy();
     fMulti->Draw((haveCustomColor) ? "a" : "a plc pmc");
     // Set ranges
     if(fFitRange.first > 0 && fFitRange.second > 0)
@@ -186,13 +189,13 @@ TCanvas* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF,
         fMulti->SetMinimum(ymin * scaleMin);
         fMulti->SetMaximum(ymax * scaleMax);
     }
-    c->Update();
+    pad->Update();
     leg->Draw();
     // Somehow GetXaxis sets the selected pad and this causes
     // all posterior DrawClones to be drawn on this canvas
     // reset it!
     gROOT->SetSelectedPad(nullptr);
-    return c;
+    return pad;
 }
 
 TCanvas* Angular::Comparator::DrawTheo()
