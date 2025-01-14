@@ -21,6 +21,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 
@@ -363,7 +364,7 @@ void Fitters::Interface::ReadComparatorConfig(const std::string& file)
 }
 
 template <typename T>
-std::optional<T> Fitters::Interface::GetCompDrawOpt(const std::string& opt, const std::string& header)
+std::optional<T> Fitters::Interface::GetCompOpt(const std::string& opt, const std::string& header)
 {
     if(!fCompConf.count(header))
         return std::nullopt;
@@ -371,7 +372,12 @@ std::optional<T> Fitters::Interface::GetCompDrawOpt(const std::string& opt, cons
     auto it {std::find_if(vec.begin(), vec.end(),
                           [&](const std::pair<std::string, std::string>& pair) { return pair.first == opt; })};
     if(it != vec.end())
-        return std::optional<T> {(T)std::stod(it->second)};
+    {
+        if constexpr(std::is_arithmetic_v<T>)
+            return std::optional<T> {(T)std::stod(it->second)};
+        else
+            return std::optional<T>(it->second);
+    }
     else
         return std::nullopt;
 }
@@ -379,10 +385,10 @@ std::optional<T> Fitters::Interface::GetCompDrawOpt(const std::string& opt, cons
 void Fitters::Interface::DoComp()
 {
     // Get general
-    auto logy {GetCompDrawOpt<bool>("logy").value()};
-    auto withSF {GetCompDrawOpt<bool>("withSF").value()};
-    auto offset {GetCompDrawOpt<double>("offset").value()};
-    auto save {GetCompDrawOpt<bool>("save").value()};
+    auto logy {GetCompOpt<bool>("logy").value()};
+    auto withSF {GetCompOpt<bool>("withSF").value()};
+    auto offset {GetCompOpt<double>("offset").value()};
+    auto save {GetCompOpt<bool>("save").value()};
     // Canvas layout
     // Get number of canvas
     auto size {(int)fKeys.size()};
@@ -421,7 +427,7 @@ void Fitters::Interface::DoComp()
         auto* pad {dynamic_cast<TPad*>(base)};
         // Draw!
         // But first check for local options!
-        auto localLogy {GetCompDrawOpt<bool>("logy", state)};
+        auto localLogy {GetCompOpt<bool>("logy", state)};
         comp.Draw(state, (localLogy ? localLogy.value() : logy), withSF, offset, pad);
         ip++;
     }
@@ -437,5 +443,38 @@ void Fitters::Interface::DoComp()
             cs[i]->SaveAs(TString::Format("./Outputs/ang_%d.png", i));
         }
         gROOT->SetSelectedPad(nullptr); // to avoid issues later with DrawClone
+    }
+}
+
+Fitters::Interface::Key Fitters::Interface::GetKeyOfGuess(double guess, double w)
+{
+    for(int i = 0; i < fKeys.size(); i++)
+    {
+        auto& k {fKeys[i]};
+        auto& g {fGuess[k]};
+        if(std::abs(guess - g) < w)
+            return k;
+    }
+    std::cout << BOLDRED << "Fitters::Interface::GetKeyOfGuess(): cannot locate state for " << guess << " MeV" << RESET
+              << '\n';
+    return "";
+}
+
+std::string Fitters::Interface::GetTheoCrossSection(const Key& key)
+{
+    auto simu {GetCompOpt<std::string>("simu", key)};
+    if(simu)
+    {
+        for(const auto& [model, file] : fCompConf.at(key))
+            if(model == simu)
+                return file;
+        std::cout << BOLDRED << "Fitters::Interface::GetTheoXS(): cannot find model for simulation named "
+                  << simu.value() << RESET << '\n';
+        return "";
+    }
+    else
+    {
+        std::cout << BOLDRED << "Fitters::Interface::GetTheoXS(): no simu keyword in header " << key << RESET << '\n';
+        return "";
     }
 }

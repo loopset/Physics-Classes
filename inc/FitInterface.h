@@ -77,6 +77,9 @@ public:
     bool GetCte() const { return fCte; }
     const std::vector<Key>& GetKeys() const { return fKeys; }
     double GetGuess(const Key& key) const;
+    Angular::Comparator* GetComp(const Key& key) { return &fComparators.at(key); }
+    Key GetKeyOfGuess(double guess, double width = 0.15);
+    std::string GetTheoCrossSection(const Key& key);
 
     // Other methods
     void Print() const;
@@ -94,7 +97,7 @@ private:
     void CleanNotStates();
     std::string FormatLabel(const std::string& label);
     template <typename T>
-    std::optional<T> GetCompDrawOpt(const std::string& opt, const std::string& header = "Draw");
+    std::optional<T> GetCompOpt(const std::string& opt, const std::string& header = "Draw");
 };
 } // namespace Fitters
 

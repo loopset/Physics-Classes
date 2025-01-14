@@ -275,8 +275,12 @@ TCanvas* Angular::Comparator::ScaleToExp(const std::string& model, PhysUtils::Ex
     // Increase counter
     cScaleIdx++;
     // Create multigraph to draw all together
-    auto* gteff {teff->CreateGraph()};
-    gteff->SetTitle("Simulated");
+    TGraphAsymmErrors* gteff {};
+    if(teff)
+    {
+        gteff = teff->CreateGraph();
+        gteff->SetTitle("Simulated");
+    }
 
     auto* mg {new TMultiGraph};
     mg->SetTitle(TString::Format("Eff. for %s;#theta_{CM} [#circ];#epsilon", model.c_str()));
@@ -284,7 +288,7 @@ TCanvas* Angular::Comparator::ScaleToExp(const std::string& model, PhysUtils::Ex
     gEff->SetLineWidth(2);
     gEff->SetLineColor(kMagenta);
     mg->Add(gEff);
-    if(teff)
+    if(gteff)
     {
         gteff->SetLineWidth(2);
         gteff->SetLineColor(8);
