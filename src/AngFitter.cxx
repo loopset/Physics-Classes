@@ -379,6 +379,7 @@ TCanvas* Angular::Fitter::DrawCounts(bool both, const TString& title)
     for(const auto& [key, counts] : fIgCounts)
     {
         auto* g {GetIgCountsGraph(key)};
+        g->SetNameTitle(key.c_str(), key.c_str());
         // Legend
         leg->AddEntry(g, key.c_str(), "lp");
         mg->Add(g);

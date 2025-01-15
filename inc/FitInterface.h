@@ -1,8 +1,6 @@
 #ifndef FitInterface_h
 #define FitInterface_h
 
-#include "TGraphErrors.h"
-
 #include "AngComparator.h"
 
 #include <map>
@@ -10,6 +8,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+// forward declaration
+class TGraphErrors;
 
 namespace Fitters
 {
@@ -29,10 +30,10 @@ public:
 
 private:
     // Commom settings
-    std::vector<Key> fKeys {};                     //!< Keys used for this fit
-    std::map<std::string, double> fGuess {};       //!< Ex initial guess, which tags the state
-    std::map<std::string, std::string> fLabels {}; //!< Labels for state
-    bool fIsRead {};                               //! !< Whether this object is constructed from file or not
+    std::vector<Key> fKeys {};       //!< Keys used for this fit
+    std::map<Key, double> fGuess {}; //!< Ex initial guess, which tags the state
+    std::map<Key, Info> fLabels {};  //!< Labels for state
+    bool fIsRead {};                 //! !< Whether this object is constructed from file or not
     // Settings for Fit stage
     Initial fInitial {}; //!
     Bounds fBounds {};   //!
@@ -57,14 +58,17 @@ public:
     void AddState(const Key& key, const DoubleVec& init, const Info& info = {});
     void SetInitial(const Key& key, unsigned int idx, double val);
     void SetBounds(const Key& key, unsigned int idx, const Pair& pair);
+    void SetOffsetMeanBounds(double offset);
     void SetBoundsAll(unsigned int idx, const Pair& pair);
     void DisableBounds(unsigned int idx);
     void SetFix(const Key& key, unsigned int idx, bool fix);
     void SetFixAll(unsigned int idx, bool fix);
     void EndAddingStates();
+    void ReadPreviousFit(const std::string& file);
+    void EvalSigma(TGraphErrors* gsigma);
     // Angular
     void AddAngularDistribution(const Key& key, TGraphErrors* gexp);
-    void ReadComparatorConfig(const std::string& file);
+    void ReadCompConfig(const std::string& file);
     void DoComp();
 
     // Getters
@@ -76,6 +80,7 @@ public:
     int GetNPS() const { return fNPS; }
     bool GetCte() const { return fCte; }
     const std::vector<Key>& GetKeys() const { return fKeys; }
+    const std::vector<Key>& GetPeaks() const { return GetKeys(); }
     double GetGuess(const Key& key) const;
     Angular::Comparator* GetComp(const Key& key) { return &fComparators.at(key); }
     Key GetKeyOfGuess(double guess, double width = 0.15);

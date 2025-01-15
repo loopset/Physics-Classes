@@ -5,6 +5,7 @@
 #include "TEfficiency.h"
 #include "TGraphAsymmErrors.h"
 #include "TGraphErrors.h"
+#include "TMultiGraph.h"
 
 #include <string>
 #include <unordered_map>
@@ -43,7 +44,9 @@ public:
     void SaveAs(const std::string& file);
 
 private:
-    void AddGraph(const std::string& peak, TEfficiency* eff, const std::string& name = "");
+    void AddGraph(const std::string& peak, TEfficiency* eff);
+    std::pair<double, double> GetXaxisRange(TMultiGraph* mg);
+    double GetYaxisRange(TMultiGraph* mg);
 };
 
 class Sigmas

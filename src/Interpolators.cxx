@@ -1,22 +1,27 @@
 #include "Interpolators.h"
 
+#include "TAxis.h"
 #include "TCanvas.h"
 #include "TEfficiency.h"
 #include "TFile.h"
 #include "TGraph.h"
+#include "TGraphAsymmErrors.h"
 #include "TGraphErrors.h"
+#include "TLegend.h"
 #include "TMath.h"
 #include "TMultiGraph.h"
 #include "TString.h"
+#include "TVirtualPad.h"
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
 
-void Interpolators::Efficiency::AddGraph(const std::string& peak, TEfficiency* eff, const std::string& name)
+void Interpolators::Efficiency::AddGraph(const std::string& peak, TEfficiency* eff)
 {
     fGraph[peak] = eff->CreateGraph();
-    fGraph[peak]->SetName(name.length() ? name.c_str() : peak.c_str());
+    fGraph[peak]->SetName(peak.c_str());
     fGraph[peak]->SetBit(TGraph::kIsSortedX); // mark X to be already sorted
 }
 
@@ -31,9 +36,8 @@ void Interpolators::Efficiency::Add(const std::string& peak, const std::string& 
     // Push to map
     eff->SetTitle((peak + ";#theta_{CM} [#circ];#epsilon").c_str());
     fEff[peak] = eff;
-    fEff[peak]->SetTitle(peak.c_str());
     // Create graph
-    AddGraph(peak, eff, name);
+    AddGraph(peak, eff);
 }
 
 void Interpolators::Efficiency::Add(const std::string& peak, TEfficiency* eff)
@@ -60,6 +64,57 @@ double Interpolators::Efficiency::GetPointUEff(const std::string& peak, double t
     auto bin {eff->FindFixBin(thetaCM)};
     // Error as mean of low and up (must be equal in principle)
     return (eff->GetEfficiencyErrorLow(bin) + eff->GetEfficiencyErrorUp(bin)) / 2;
+}
+
+std::pair<double, double> Interpolators::Efficiency::GetXaxisRange(TMultiGraph* mg)
+{
+    double xmax {-1111};
+    double xmin {1111};
+    for(auto* o : *mg->GetListOfGraphs())
+    {
+        auto* g {(TGraphAsymmErrors*)o};
+        auto npoints {g->GetN()};
+        for(int i = 0; i < npoints; i++)
+        {
+            auto x {g->GetPointX(i)};
+            auto y {g->GetPointY(i)};
+            if(y > 0)
+            {
+                if(x < xmin)
+                    xmin = x;
+                break;
+            }
+        }
+        for(int i = npoints - 1; i >= 0; i--)
+        {
+            auto x {g->GetPointX(i)};
+            auto y {g->GetPointY(i)};
+            if(y > 0)
+            {
+                if(x > xmax)
+                    xmax = x;
+                break;
+            }
+        }
+    }
+    return {0.8 * xmin, xmax * 1.2};
+}
+
+double Interpolators::Efficiency::GetYaxisRange(TMultiGraph* mg)
+{
+    double ymax {-1111};
+    for(auto* o : *mg->GetListOfGraphs())
+    {
+        auto* g {(TGraphAsymmErrors*)o};
+        auto npoints {g->GetN()};
+        for(int i = 0; i < npoints; i++)
+        {
+            auto y {g->GetPointY(i)};
+            if(y > ymax)
+                ymax = y;
+        }
+    }
+    return 1.2 * ymax;
 }
 
 TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)
@@ -92,7 +147,19 @@ TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)
             mg->Add(g, "lp");
         }
         mg->Draw("apl plc pmc");
-        c->BuildLegend();
+        // Set ranges
+        // X
+        auto [xmin, xmax] {GetXaxisRange(mg)};
+        std::cout << "Found range : " << xmin << " " << xmax << '\n';
+        mg->GetXaxis()->SetLimits(xmin, xmax);
+        // Y
+        auto ymax {GetYaxisRange(mg)};
+        std::cout << "Y range : " << ymax << '\n';
+        mg->SetMaximum(ymax);
+        gPad->Update();
+        auto leg {c->BuildLegend()};
+        leg->SetNColumns(fEff.size() / 5 + 1); // 5 items per legend column
+        leg->Draw();
     }
     return c;
 }

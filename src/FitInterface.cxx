@@ -8,6 +8,7 @@
 #include "TSystem.h"
 
 #include "AngComparator.h"
+#include "FitUtils.h"
 #include "PhysColors.h"
 
 #include <algorithm>
@@ -39,10 +40,10 @@ std::string Fitters::Interface::GetType(const Key& key)
 {
     auto it {key.find_first_of("0123456789")};
     if(it == std::string::npos)
-        throw std::invalid_argument("Fitters::Interface::GetType(): received not numbered parameter " + key);
+        throw std::invalid_argument("Interface::GetType(): received not numbered parameter " + key);
     auto type {key.substr(0, it)};
     if(!(type == "g" || type == "v" || type == "ps" || type == "cte"))
-        throw std::invalid_argument("Fitters::Interface::GetType(): received wrong key " + key);
+        throw std::invalid_argument("Interface::GetType(): received wrong key " + key);
     return type;
 }
 
@@ -50,7 +51,7 @@ int Fitters::Interface::GetIndex(const Key& key)
 {
     auto it {key.find_first_of("0123456789")};
     if(it == std::string::npos)
-        throw std::invalid_argument("Fitters::Interface::GetIndex(): received not numbered parameter " + key);
+        throw std::invalid_argument("Interface::GetIndex(): received not numbered parameter " + key);
     return std::stoi(key.substr(it));
 }
 
@@ -60,12 +61,12 @@ bool Fitters::Interface::CheckInit(const Key& key, const DoubleVec& init)
     // Check size
     auto size {init.size()};
     if(size != fNParsType[type])
-        throw std::runtime_error("Fitters::Interface::CheckInit(): " + type + "parameter must have only" +
+        throw std::runtime_error("Interface::CheckInit(): " + type + "parameter must have only" +
                                  std::to_string(fNParsType[type]) + " initial values");
     // Check if it is already in keys
     auto isRepeated {std::find(fKeys.begin(), fKeys.end(), key) != fKeys.end()};
     if(isRepeated)
-        throw std::runtime_error("Fitters::Interface::CheckInit(): parameter " + key + " is repeated!");
+        throw std::runtime_error("Interface::CheckInit(): parameter " + key + " is repeated!");
     if(type == "g")
         fNGaus++;
     else if(type == "v")
@@ -134,10 +135,10 @@ void Fitters::Interface::SetDefaults()
             }
             // 2 -> Sigma
             if(i == 2)
-                bounds.push_back({0, 0.5});
+                bounds.push_back({0, 1});
             // 3 -> Gamma
             if(i == 3)
-                bounds.push_back({0, 2});
+                bounds.push_back({0, 10});
         }
         fBounds.insert({key, bounds});
 
@@ -175,6 +176,18 @@ void Fitters::Interface::SetBounds(const Key& key, unsigned int idx, const Pair&
         bounds[idx] = pair;
 }
 
+void Fitters::Interface::SetOffsetMeanBounds(double offset)
+{
+    for(auto& [key, vec] : fBounds)
+    {
+        if(vec.size() > 1)
+        {
+            auto mean {fInitial[key][1]};
+            vec[1] = {mean - offset, mean + offset};
+        }
+    }
+}
+
 void Fitters::Interface::SetBoundsAll(unsigned int idx, const Pair& pair)
 {
     for(auto& [key, _] : fBounds)
@@ -204,7 +217,7 @@ unsigned int Fitters::Interface::GetIdxKey(const Key& key) const
 {
     auto it {std::find(fKeys.begin(), fKeys.end(), key)};
     if(it == fKeys.end())
-        throw std::runtime_error("Fitters::Interface::GetIdxKey() : cannot locate idx for " + key);
+        throw std::runtime_error("Interface::GetIdxKey() : cannot locate idx for " + key);
     auto idx {std::distance(fKeys.begin(), it)};
     return idx;
 }
@@ -288,12 +301,30 @@ void Fitters::Interface::CleanNotStates()
     }
 }
 
+void Fitters::Interface::ReadPreviousFit(const std::string& file)
+{
+    auto previous {Fitters::ReadInit(file)};
+    for(auto& [key, init] : fInitial)
+        if(previous.count(key))
+            init = previous[key];
+    std::cout << BOLDYELLOW << "Interface::ReadPreviousFit(): read file " << file << RESET << '\n';
+}
+
+void Fitters::Interface::EvalSigma(TGraphErrors* gsigma)
+{
+    for(auto& [key, vec] : fInitial)
+    {
+        if(vec.size() > 2) // sigma is 3rd parameter
+            vec[2] = gsigma->Eval(vec[1]);
+    }
+}
+
 void Fitters::Interface::Read(const std::string& file)
 {
     auto f {std::make_unique<TFile>(file.c_str())};
     auto* inter {f->Get<Fitters::Interface>("inter")};
     if(!inter)
-        throw std::runtime_error("Fitters::Interface::Read(): cannot read written object");
+        throw std::runtime_error("Interface::Read(): cannot read written object");
     *this = *inter;
     fIsRead = true;
     delete inter;
@@ -314,18 +345,18 @@ std::string Fitters::Interface::FormatLabel(const std::string& label)
 
 void Fitters::Interface::AddAngularDistribution(const Key& key, TGraphErrors* gexp)
 {
-    auto str {key + " = " + FormatLabel(fLabels[key])};
+    auto str {key + " = " + TString::Format("%.1f MeV ", fGuess[key]).Data() + FormatLabel(fLabels[key])};
     fComparators[key] = Angular::Comparator {str, gexp};
 }
 
-void Fitters::Interface::ReadComparatorConfig(const std::string& file)
+void Fitters::Interface::ReadCompConfig(const std::string& file)
 {
     // Code partially generated with chatgpt
     // We could have used ActRoot::InputParser but I dont want
     // to introduce library dependences
     std::ifstream streamer(file);
     if(!streamer)
-        throw std::runtime_error("Fitters::Interface::ReadComparator: cannot open config file");
+        throw std::runtime_error("Interface::ReadComparator: cannot open config file");
 
     std::string currentHeader {"global"};
     std::string line;
@@ -374,9 +405,9 @@ std::optional<T> Fitters::Interface::GetCompOpt(const std::string& opt, const st
     if(it != vec.end())
     {
         if constexpr(std::is_arithmetic_v<T>)
-            return std::optional<T> {(T)std::stod(it->second)};
+            return std::optional<T> {(T)std::stod(it->second)}; // str to double and then to T type
         else
-            return std::optional<T>(it->second);
+            return std::optional<std::string>(it->second);
     }
     else
         return std::nullopt;
@@ -384,11 +415,12 @@ std::optional<T> Fitters::Interface::GetCompOpt(const std::string& opt, const st
 
 void Fitters::Interface::DoComp()
 {
-    // Get general
+    // Get general configuration
     auto logy {GetCompOpt<bool>("logy").value()};
     auto withSF {GetCompOpt<bool>("withSF").value()};
     auto offset {GetCompOpt<double>("offset").value()};
     auto save {GetCompOpt<bool>("save").value()};
+
     // Canvas layout
     // Get number of canvas
     auto size {(int)fKeys.size()};
@@ -400,6 +432,7 @@ void Fitters::Interface::DoComp()
         cs.push_back(new TCanvas {TString::Format("cComp%d", c), TString::Format("Comp canvas %d", c)});
         cs.back()->DivideSquare(npads);
     }
+
     // Iterate!
     int ic {};  // index of canvas
     int ip {1}; // index of pad
@@ -410,7 +443,7 @@ void Fitters::Interface::DoComp()
         {
             for(const auto& [key, file] : fCompConf[state])
             {
-                // Check whether is file
+                // Check whether is file path; if not, it is a setting
                 if(file.find("/") != std::string::npos)
                     comp.Add(key, file);
             }
@@ -455,26 +488,27 @@ Fitters::Interface::Key Fitters::Interface::GetKeyOfGuess(double guess, double w
         if(std::abs(guess - g) < w)
             return k;
     }
-    std::cout << BOLDRED << "Fitters::Interface::GetKeyOfGuess(): cannot locate state for " << guess << " MeV" << RESET
-              << '\n';
+    std::cout << BOLDRED << "Interface::GetKeyOfGuess(): cannot locate state for " << guess << " MeV" << RESET << '\n';
     return "";
 }
 
 std::string Fitters::Interface::GetTheoCrossSection(const Key& key)
 {
+    if(!fCompConf.count(key))
+        std::cout << BOLDCYAN << "Interface::GetTheoXS(): no state " << key << " in conf file" << RESET << '\n';
     auto simu {GetCompOpt<std::string>("simu", key)};
     if(simu)
     {
         for(const auto& [model, file] : fCompConf.at(key))
             if(model == simu)
                 return file;
-        std::cout << BOLDRED << "Fitters::Interface::GetTheoXS(): cannot find model for simulation named "
-                  << simu.value() << RESET << '\n';
+        std::cout << BOLDRED << "Interface::GetTheoXS(): cannot find model for simulation named " << simu.value()
+                  << RESET << '\n';
         return "";
     }
     else
     {
-        std::cout << BOLDRED << "Fitters::Interface::GetTheoXS(): no simu keyword in header " << key << RESET << '\n';
+        std::cout << BOLDRED << "Interface::GetTheoXS(): no simu keyword in header " << key << RESET << '\n';
         return "";
     }
 }
