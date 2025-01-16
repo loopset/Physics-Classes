@@ -35,10 +35,11 @@ private:
     std::map<Key, Info> fLabels {};  //!< Labels for state
     bool fIsRead {};                 //! !< Whether this object is constructed from file or not
     // Settings for Fit stage
-    Initial fInitial {}; //!
-    Bounds fBounds {};   //!
-    Fixed fFix {};       //!
-    Step fStep {};       //!
+    Initial fPars {};  //! //!< Initial or (once fitted) parameter values
+    Initial fUncs {};  //! //!< Uncertainties of parameters
+    Bounds fBounds {}; //!
+    Fixed fFix {};     //!
+    Step fStep {};     //!
     std::unordered_map<std::string, unsigned int> fNParsType {
         {"g", 3}, {"v", 4}, {"ps", 1}, {"cte", 1}};                       //! !< Number of pars pers type
     std::vector<std::string> fParNames {"Amp", "Mean", "Sigma", "Gamma"}; //! !< Names of parameters
@@ -72,7 +73,7 @@ public:
     void DoComp();
 
     // Getters
-    const Initial& GetInitial() const { return fInitial; }
+    const Initial& GetInitial() const { return fPars; }
     const Bounds& GetBounds() const { return fBounds; }
     const Fixed& GetFixed() const { return fFix; }
     int GetNGauss() const { return fNGaus; }
@@ -81,6 +82,10 @@ public:
     bool GetCte() const { return fCte; }
     const std::vector<Key>& GetKeys() const { return fKeys; }
     const std::vector<Key>& GetPeaks() const { return GetKeys(); }
+    double GetParameter(const Key& key, unsigned int idx);
+    std::vector<double> GetParameterAll(unsigned int idx);
+    double GetUnc(const Key& key, unsigned int idx);
+    std::vector<double> GetUncAll(unsigned int idx);
     double GetGuess(const Key& key) const;
     Angular::Comparator* GetComp(const Key& key) { return &fComparators.at(key); }
     Key GetKeyOfGuess(double guess, double width = 0.15);
@@ -89,7 +94,7 @@ public:
     // Other methods
     void Print() const;
     void Write(const std::string& file) const;
-    void Read(const std::string& file);
+    void Read(const std::string& file, const std::string& fitfile = "");
 
 
 private:

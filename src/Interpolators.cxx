@@ -13,7 +13,6 @@
 #include "TString.h"
 #include "TVirtualPad.h"
 
-#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -150,11 +149,9 @@ TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)
         // Set ranges
         // X
         auto [xmin, xmax] {GetXaxisRange(mg)};
-        std::cout << "Found range : " << xmin << " " << xmax << '\n';
         mg->GetXaxis()->SetLimits(xmin, xmax);
         // Y
         auto ymax {GetYaxisRange(mg)};
-        std::cout << "Y range : " << ymax << '\n';
         mg->SetMaximum(ymax);
         gPad->Update();
         auto leg {c->BuildLegend()};

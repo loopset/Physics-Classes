@@ -26,6 +26,8 @@ void RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model, const Fi
             const std::string& title = "", const std::unordered_map<std::string, std::string>& labels = {},
             const Fitters::Runner::Step& steps = {});
 
-Fitters::Runner::Init ReadInit(const std::string& name);
+std::pair<Fitters::Runner::Init, Fitters::Runner::Init> ReadInit(const std::string& name);
+
+void ReadDrawGlobalFit(const std::string& file);
 } // namespace Fitters
 #endif

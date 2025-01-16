@@ -115,24 +115,25 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
     std::cout << BOLDCYAN << "++++++++++++++++++++++++++++++" << RESET << '\n';
 }
 
-Fitters::Runner::Init Fitters::ReadInit(const std::string& name)
+std::pair<Fitters::Runner::Init, Fitters::Runner::Init> Fitters::ReadInit(const std::string& name)
 {
     auto file {std::make_unique<TFile>(name.c_str())};
-    std::cout << BOLDCYAN << "Fitters::ReadInit() from file : " << name << RESET << '\n';
     // Read parameter names
     auto* names {file->Get<std::vector<std::string>>("ParNames")};
     auto* res {file->Get<TFitResult>("FitResult")};
 
-    Fitters::Runner::Init ret;
+    Fitters::Runner::Init vals, uncs;
     for(int i = 0; i < names->size(); i++)
     {
         // Split
         auto it {names->at(i).find_first_of("_")};
         auto key {names->at(i).substr(0, it)};
         auto val {res->Parameter(i)};
-        ret[key].push_back(val);
+        auto unc {res->Error(i)};
+        vals[key].push_back(val);
+        uncs[key].push_back(unc);
     }
-    return ret;
+    return {vals, uncs};
 }
 
 
@@ -155,4 +156,41 @@ void Fitters::SaveGlobalFit(const std::string& file, TH1D* h, TGraph* g,
     f->WriteObject(&keys, "NamePeaks");
     f->WriteObject(&vhs, "HistoPeaks");
     f->WriteObject(leg, "Legend");
+}
+
+void Fitters::ReadDrawGlobalFit(const std::string& file)
+{
+    auto f {std::make_unique<TFile>(file.c_str())};
+    // Ex
+    auto* h {f->Get<TH1D>("HistoEx")};
+    h->SetDirectory(nullptr);
+    // Global fit
+    auto* g {f->Get<TGraph>("GraphGlobal")};
+    // Individual fits
+    auto* vhs {f->Get<TList>("HistoPeaks")};
+    // Names
+    auto* names {f->Get<std::vector<std::string>>("NamePeaks")};
+    // Draw
+    auto* leg {new TLegend {0.5, 0.6, 0.9, 0.9}};
+    leg->SetBorderSize(0);
+    leg->SetFillStyle(0);
+    leg->AddEntry(h, "Experimental", "le");
+    leg->AddEntry(g, "Global fit", "l");
+    h->Draw("e");
+    g->Draw("l");
+    auto* stack {new THStack};
+    int idx {};
+    for(auto* o : *vhs)
+    {
+        auto* h {dynamic_cast<TH1D*>(o)};
+        h->SetDirectory(nullptr);
+        leg->AddEntry(h, names->at(idx).c_str(), "l");
+        stack->Add(h, "hist");
+        idx++;
+    }
+    stack->Draw("nostack plc same");
+    auto size {leg->GetListOfPrimitives()->GetSize()};
+    auto ncols {size / 4 + (size % 4 ? 1 : 0)};
+    leg->SetNColumns(ncols);
+    leg->Draw();
 }

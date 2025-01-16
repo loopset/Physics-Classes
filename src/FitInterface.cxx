@@ -31,7 +31,7 @@ void Fitters::Interface::AddState(const Key& key, const DoubleVec& init, const I
     if(CheckInit(key, init))
     {
         fKeys.push_back(key);
-        fInitial.insert({key, init});
+        fPars.insert({key, init});
         fLabels.insert({key, info});
     }
 }
@@ -106,7 +106,7 @@ void Fitters::Interface::SetSorting()
     fGuess.clear();
     for(const auto& key : fKeys)
     {
-        auto& initial {fInitial[key]};
+        auto& initial {fPars[key]};
         if(initial.size() < 2)
             fGuess[key] = initial.front();
         else
@@ -158,7 +158,7 @@ void Fitters::Interface::EndAddingStates()
 
 void Fitters::Interface::SetInitial(const Key& key, unsigned int idx, double val)
 {
-    auto& initial {fInitial.at(key)};
+    auto& initial {fPars.at(key)};
     if(idx < initial.size())
     {
         initial.at(idx) = val;
@@ -182,7 +182,7 @@ void Fitters::Interface::SetOffsetMeanBounds(double offset)
     {
         if(vec.size() > 1)
         {
-            auto mean {fInitial[key][1]};
+            auto mean {fPars[key][1]};
             vec[1] = {mean - offset, mean + offset};
         }
     }
@@ -227,6 +227,36 @@ double Fitters::Interface::GetGuess(const Key& key) const
     return fGuess.at(key);
 }
 
+double Fitters::Interface::GetParameter(const Key& key, unsigned int idx)
+{
+    if(fPars.count(key))
+    {
+        auto& vec {fPars[key]};
+        if(idx < vec.size())
+            return vec[idx];
+    }
+    return -11; // default value to avoid raising an exception
+}
+
+std::vector<double> Fitters::Interface::GetParameterAll(unsigned int idx)
+{
+    std::vector<double> ret;
+    for(const auto& key : fKeys)
+        ret.push_back(GetParameter(key, idx));
+    return ret;
+}
+
+double Fitters::Interface::GetUnc(const Key& key, unsigned int idx)
+{
+    if(fUncs.count(key))
+    {
+        auto& vec {fUncs[key]};
+        if(idx < vec.size())
+            return vec[idx];
+    }
+    return -11;
+}
+
 void Fitters::Interface::Print() const
 {
     std::cout << BOLDCYAN << "----- Fitters::Interface -----" << '\n';
@@ -234,7 +264,7 @@ void Fitters::Interface::Print() const
     {
         for(const auto& key : fKeys)
         {
-            const auto& initial {fInitial.at(key)};
+            const auto& initial {fPars.at(key)};
             const auto& bounds {fBounds.at(key)};
             const auto& fixed {fFix.at(key)};
             std::cout << "-> " << key << " : " << fLabels.at(key) << '\n';
@@ -254,6 +284,16 @@ void Fitters::Interface::Print() const
             std::cout << "-> " << key << '\n';
             std::cout << "    label : " << fLabels.at(key) << '\n';
             std::cout << "    guess : " << fGuess.at(key) << '\n';
+            if(fPars.count(key))
+            {
+                const auto& pars {fPars.at(key)};
+                const auto& uncs {fUncs.at(key)};
+                for(int i = 0; i < pars.size(); i++)
+                {
+                    std::cout << "    " << fParNames[i] << '\n';
+                    std::cout << "      fitted : " << pars[i] << " +/- " << uncs[i] << '\n';
+                }
+            }
         }
     }
     std::cout << RESET;
@@ -303,23 +343,25 @@ void Fitters::Interface::CleanNotStates()
 
 void Fitters::Interface::ReadPreviousFit(const std::string& file)
 {
-    auto previous {Fitters::ReadInit(file)};
-    for(auto& [key, init] : fInitial)
-        if(previous.count(key))
-            init = previous[key];
+    auto [vals, uncs] {Fitters::ReadInit(file)};
+    for(auto& [key, vec] : vals)
+    {
+        fPars[key] = vec;
+        fUncs[key] = uncs[key];
+    }
     std::cout << BOLDYELLOW << "Interface::ReadPreviousFit(): read file " << file << RESET << '\n';
 }
 
 void Fitters::Interface::EvalSigma(TGraphErrors* gsigma)
 {
-    for(auto& [key, vec] : fInitial)
+    for(auto& [key, vec] : fPars)
     {
         if(vec.size() > 2) // sigma is 3rd parameter
             vec[2] = gsigma->Eval(vec[1]);
     }
 }
 
-void Fitters::Interface::Read(const std::string& file)
+void Fitters::Interface::Read(const std::string& file, const std::string& fitfile)
 {
     auto f {std::make_unique<TFile>(file.c_str())};
     auto* inter {f->Get<Fitters::Interface>("inter")};
@@ -330,6 +372,9 @@ void Fitters::Interface::Read(const std::string& file)
     delete inter;
     // Clean states that are not gaussian or voigt
     CleanNotStates();
+    // Read previous fit if specified
+    if(fitfile.length())
+        ReadPreviousFit(fitfile);
 }
 
 std::string Fitters::Interface::FormatLabel(const std::string& label)
