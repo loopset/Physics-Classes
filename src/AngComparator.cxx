@@ -85,7 +85,7 @@ void Angular::Comparator::Fit(double xmin, double xmax)
         fFit[name] = GetFitGraph(gt, func.get());
         fFit[name]->SetTitle(gt->GetTitle());
         // And store results in map
-        fRes[name] = res;
+        fRes[name] = *res.Get();
     }
     Print();
 }
@@ -98,9 +98,9 @@ void Angular::Comparator::Print() const
     {
         auto& res {fRes.at(name)};
         std::cout << "-> Model : " << name << '\n';
-        std::cout << "   SF    : " << res->Value(0) << " +/- " << res->Error(0) << '\n';
-        auto chi2 {res->Chi2()};
-        auto ndf {res->Ndf()};
+        std::cout << "   SF    : " << res.Value(0) << " +/- " << res.Error(0) << '\n';
+        auto chi2 {res.Chi2()};
+        auto ndf {res.Ndf()};
         std::cout << "   chi2  : " << chi2 << '\n';
         std::cout << "   ndf   : " << ndf << '\n';
         std::cout << "   chi2 / ndf : " << chi2 / ndf << '\n';
@@ -116,7 +116,7 @@ TLegend* Angular::Comparator::BuildLegend(double width, double height)
     return l;
 }
 
-TPad* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double offset, TPad* pad)
+TVirtualPad* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double offset, TVirtualPad* pad)
 {
     // Draw all using a TMultiGraph
     fMulti = new TMultiGraph;
@@ -154,7 +154,7 @@ TPad* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, do
         g->SetLineWidth(lw);
         TString desc {name};
         if(withSF)
-            desc += TString::Format(" #Rightarrow SF = %.2f", fRes[name]->Value(0));
+            desc += TString::Format(" #Rightarrow SF = %.2f", fRes[name].Value(0));
         leg->AddEntry(g, desc, "l");
         fMulti->Add(g, "c");
     }
@@ -336,7 +336,7 @@ TCanvas* Angular::Comparator::QuotientPerPoint()
 double Angular::Comparator::GetSF(const std::string& model)
 {
     if(fRes.count(model))
-        return fRes[model]->Parameter(0);
+        return fRes[model].Parameter(0);
     else
     {
         std::cout << BOLDRED << "Angular::Comparator::GetSF(): cannot get SF because model " << model
@@ -348,7 +348,7 @@ double Angular::Comparator::GetSF(const std::string& model)
 double Angular::Comparator::GetuSF(const std::string& model)
 {
     if(fRes.count(model))
-        return fRes[model]->Error(0);
+        return fRes[model].Error(0);
     else
     {
         std::cout << BOLDRED << "Angular::Comparator::GetuSF(): cannot get u(SF) because model " << model
@@ -366,7 +366,7 @@ void Angular::Comparator::Write(const std::string& file)
     for(const auto& [model, res] : fRes)
     {
         names.push_back(model);
-        sfs.emplace_back(res->Parameter(0), res->ParError(0), res->Chi2() / res->Ndf(), res->Ndf());
+        sfs.emplace_back(res.Parameter(0), res.ParError(0), res.Chi2() / res.Ndf(), res.Ndf());
     }
     f->WriteObject(&names, "Models");
     f->WriteObject(&sfs, "SFs");

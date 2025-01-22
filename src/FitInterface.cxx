@@ -499,14 +499,10 @@ void Fitters::Interface::DoComp()
             ip = 1;
             ic++;
         }
-        // cd into current pad (TVirtualPad)
-        auto* base {cs[ic]->cd(ip)};
-        // cast into TPad
-        auto* pad {dynamic_cast<TPad*>(base)};
         // Draw!
         // But first check for local options!
         auto localLogy {GetCompOpt<bool>("logy", state)};
-        comp.Draw(state, (localLogy ? localLogy.value() : logy), withSF, offset, pad);
+        comp.Draw(state, (localLogy ? localLogy.value() : logy), withSF, offset, cs[ic]->cd(ip));
         ip++;
     }
     // And save

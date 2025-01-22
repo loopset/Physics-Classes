@@ -2,11 +2,11 @@
 #define AngComparator_h
 
 #include "TEfficiency.h"
-#include "TFitResultPtr.h"
+#include "TFitResult.h"
 #include "TGraphErrors.h"
 #include "TLegend.h"
 #include "TMultiGraph.h"
-#include "TPad.h"
+#include "TVirtualPad.h"
 
 #include "PhysExperiment.h"
 
@@ -28,7 +28,7 @@ private:
     // Graph fit results from fit
     std::unordered_map<std::string, TGraphErrors*> fFit {};
     // Fit results, containing SF
-    std::unordered_map<std::string, TFitResultPtr> fRes {};
+    std::unordered_map<std::string, TFitResult> fRes {};
     // Store also fitting range
     std::pair<double, double> fFitRange {-1, -1};
     // To format lines...
@@ -50,8 +50,8 @@ public:
     void Print() const;
 
     // Main draw method
-    TPad*
-    Draw(const TString& title = "", bool logy = false, bool withSF = true, double offset = 3, TPad* pad = nullptr);
+    TVirtualPad* Draw(const TString& title = "", bool logy = false, bool withSF = true, double offset = 3,
+                      TVirtualPad* pad = nullptr);
 
     // Draw theoretical and fits
     TCanvas* DrawTheo();
