@@ -71,7 +71,7 @@ public:
     void Write(const std::string& file);
 
 private:
-    TGraphErrors* ReadTwoFNR(const std::string& file);
+    TGraphErrors* ReadTheo(const std::string& file);
     TGraphErrors* GetFitGraph(TGraphErrors* g, TF1* f);
     TLegend* BuildLegend(double width = 0.25, double height = 0.2);
 };

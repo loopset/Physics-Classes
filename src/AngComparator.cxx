@@ -32,8 +32,8 @@
 
 void Angular::Comparator::Add(const std::string& name, const std::string& file, int lc, int ls, int lw)
 {
-    // So far, assume a twofnr file format
-    fTheo[name] = ReadTwoFNR(file);
+    // Read any two column part of a text file
+    fTheo[name] = ReadTheo(file);
     // Set title
     fTheo[name]->SetTitle(name.c_str());
     // And add key
@@ -42,9 +42,45 @@ void Angular::Comparator::Add(const std::string& name, const std::string& file, 
     fStyles[name] = {lc, ls, lw};
 }
 
-TGraphErrors* Angular::Comparator::ReadTwoFNR(const std::string& file)
+TGraphErrors* Angular::Comparator::ReadTheo(const std::string& file)
 {
-    return new TGraphErrors {file.c_str(), "%lg %lg"};
+    // INFO: 24/01/2025. Theoretical graph is preprocessed
+    //  so as it has the same binning as the experimental
+    //  and the bin content the the INTEGRAL in that bin width averaged by it
+    // Read the content
+    TGraphErrors theo {file.c_str(), "%lg %lg"};
+    // Convert x axis to rad
+    theo.Scale(TMath::DegToRad(), "x");
+    // Build function to integrate in bin!
+    TF1 func {"func", [&](double* x, double* p) { return theo.Eval(x[0], nullptr, "S"); }, 0, 180, 0};
+    // Minimum and maximum for theoretical graph
+    auto tMin {theo.GetPointX(0)};
+    auto tMax {theo.GetPointX(theo.GetN() - 1)};
+    // Min and max of experimental xs in rad units
+    auto eMin {fExp->GetPointX(0) * TMath::DegToRad()};
+    auto eMax {fExp->GetPointX(fExp->GetN() - 1) * TMath::DegToRad()};
+    double eBW {};
+    if(fExp->GetN() > 1)
+        eBW = (fExp->GetPointX(1) - fExp->GetPointX(0));
+    else
+        eBW = 1;
+    eBW *= TMath::DegToRad();
+    // Get starting bin centre
+    double start {};
+    for(double x = eMin; x > 0; x -= eBW)
+        start = x;
+    // And create theoretical graph with the same binning!
+    auto* ret {new TGraphErrors};
+    for(double x = start; x < tMax; x += eBW)
+    {
+        auto low {x - eBW / 2};
+        auto up {x + eBW / 2};
+        auto integral {func.Integral(low, up)};
+        ret->AddPoint(x, integral / eBW);
+    }
+    // And convert back X axis to deg units
+    ret->Scale(TMath::RadToDeg(), "x");
+    return ret;
 }
 
 TGraphErrors* Angular::Comparator::GetFitGraph(TGraphErrors* g, TF1* f)
