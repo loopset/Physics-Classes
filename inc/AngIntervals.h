@@ -6,6 +6,7 @@
 #include "TH1.h"
 
 #include <mutex>
+#include <string>
 #include <utility>
 #include <vector>
 namespace Angular
@@ -15,11 +16,12 @@ class Intervals
 private:
     std::vector<std::pair<double, double>> fRanges {};
     std::vector<double> fOmegas {};
-    std::vector<TH1D*> fHs {};
-    std::vector<std::vector<TH1D*>> fHsPS {};
-    std::mutex fMutex {}; //!< Mutex to ensure thread-safety of Fill function
+    std::vector<TH1D*> fHs {};                //!
+    std::vector<std::vector<TH1D*>> fHsPS {}; //!
+    std::mutex fMutex {};                     //! //!< Mutex to ensure thread-safety of Fill function
 
 public:
+    Intervals() = default;
     Intervals(double xmin, double xmax, const ROOT::RDF::TH1DModel& model, double step = -1, int nps = 0);
 
     // Setters
@@ -41,11 +43,13 @@ public:
     void TreatPS(int nsmooth = 10, double scale = 0.2);
 
     // Getters
+    const std::vector<std::pair<double, double>> GetRanges() const { return fRanges; }
     std::vector<TH1D*> GetHistos() const { return fHs; }
     std::vector<std::vector<TH1D*>> GetHistosPS() const { return fHsPS; }
     double GetLow(int i) const { return fRanges[i].first; }
     double GetCenter(int i) const { return (fRanges[i].first + fRanges[i].second) / 2; }
     double GetUp(int i) const { return fRanges[i].second; }
+    const std::vector<double>& GetOmegas() const { return fOmegas; }
     double GetOmega(int i) const { return fOmegas[i]; }
     double GetMin() const { return fRanges.front().first; }
     double GetMax() const { return fRanges.back().second; }
@@ -53,6 +57,8 @@ public:
 
     // Others
     TCanvas* Draw(const TString& title = "") const;
+    void Read(const std::string& file);
+    void Write(const std::string& file);
 
 private:
     double ComputeSolidAngle(double min, double max);

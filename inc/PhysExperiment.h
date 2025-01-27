@@ -15,6 +15,7 @@ private:
     double fNdiv {};
 
 public:
+    Experiment() = default;
     Experiment(const std::string& file) { Read(file); }
     Experiment(double ntargets, double ntriggers, double div, int ndiv = 1) : fNt(ntargets), fNtriggers(ntriggers)
     {

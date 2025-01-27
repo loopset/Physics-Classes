@@ -8,54 +8,54 @@
 #include <string>
 namespace PhysicsUtils
 {
-    class ExperimentInfo
+class ExperimentInfo
+{
+private:
+    double fNt {};        //!< Number of target particles
+    double fNtriggers {}; //!< Number of beam triggers
+    double fNb {};        //!< Number of beam particles (after applying division factor)
+    double fDiv {};       //!< Division factor of CATS
+
+public:
+    ExperimentInfo() = default;
+    ExperimentInfo(double ntargets, double ntriggers, double div = 1) : fNt(ntargets), fNtriggers(ntriggers), fDiv(div)
     {
-    private:
-        double fNt {}; //!< Number of target particles
-        double fNtriggers {}; //!< Number of beam triggers
-        double fNb {}; //!< Number of beam particles (after applying division factor)
-        double fDiv {};//!< Division factor of CATS
-        
-    public:
-        ExperimentInfo(double ntargets, double ntriggers, double div = 1)
-            : fNt(ntargets), fNtriggers(ntriggers), fDiv(div)
-        {
-            fNb = fNtriggers * fDiv * fDiv;
-        }
-        //Getters
-        double GetNt() const {return fNt;}
-        double GetNtriggers() const {return fNtriggers;}
-        double GetNb() const {return fNb;}
-        double GetUNb() const;
-    };
+        fNb = fNtriggers * fDiv * fDiv;
+    }
+    // Getters
+    double GetNt() const { return fNt; }
+    double GetNtriggers() const { return fNtriggers; }
+    double GetNb() const { return fNb; }
+    double GetUNb() const;
+};
 
-    class Uncertainty
-    {
-    private:
-        double fVal;
-        double fUVal;
-    public:
-        Uncertainty(double val, double uval)
-            : fVal(val), fUVal(uval)
-        {}
+class Uncertainty
+{
+private:
+    double fVal;
+    double fUVal;
 
-        std::string GetStr() const;
-    };
+public:
+    Uncertainty(double val, double uval) : fVal(val), fUVal(uval) {}
 
-    class SigmaInterpolator
-    {
-    private:
-        TGraphErrors* fGraph;
-        TGraphErrors* fScaled;//!< Just if we need to scale simulated sigmas against experimental
-        TSpline* fSpe;
-        double fFactor;
-    public:
-        SigmaInterpolator(const std::string& file, const std::string& name = "gsigma");
+    std::string GetStr() const;
+};
 
-        void ComputeAndSetScalingFactorInGS(double expsimgags);
-        void SetScalingFactor(double scaling);
-        double EvalSpline(double Ex){return fSpe->Eval(Ex);}
-    };
-}
+class SigmaInterpolator
+{
+private:
+    TGraphErrors* fGraph;
+    TGraphErrors* fScaled; //!< Just if we need to scale simulated sigmas against experimental
+    TSpline* fSpe;
+    double fFactor;
+
+public:
+    SigmaInterpolator(const std::string& file, const std::string& name = "gsigma");
+
+    void ComputeAndSetScalingFactorInGS(double expsimgags);
+    void SetScalingFactor(double scaling);
+    double EvalSpline(double Ex) { return fSpe->Eval(Ex); }
+};
+} // namespace PhysicsUtils
 
 #endif

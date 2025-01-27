@@ -31,6 +31,12 @@ private:
     double fNThresh {2};
 
 public:
+    DifferentialXS(Intervals* ivs, Interpolators::Efficiency* eff, PhysUtils::Experiment* exp)
+        : fIvs(ivs),
+          fEff(eff),
+          fExp(exp)
+    {
+    }
     DifferentialXS(Intervals* ivs, Fitter* fits, Interpolators::Efficiency* eff, PhysUtils::Experiment* exp)
         : fIvs(ivs),
           fFitter(fits),
@@ -41,6 +47,7 @@ public:
 
     // Main method
     void DoFor(const std::vector<std::string>& peaks = {});
+    void DoFor(TGraphErrors* gexp, const std::string& peak);
 
     // Getters
     const std::unordered_map<std::string, TGraphErrors*>& GetAll() const { return fXS; }
@@ -60,7 +67,7 @@ public:
     void TrimX(const std::string& peak, double xok, bool low = true);
 
 private:
-    void Do(const std::string& peak);
+    void Do(const std::vector<double>& N, const std::string& peak);
     double
     Uncertainty(const std::string& peak, double N, double Nt, double Nb, double Omega, double eps, double thetaCM);
 };

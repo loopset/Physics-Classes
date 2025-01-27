@@ -19,6 +19,7 @@
 #include "TString.h"
 #include "TVirtualPad.h"
 
+#include "AngGlobals.h"
 #include "PhysColors.h"
 #include "PhysExperiment.h"
 #include "PhysSF.h"
@@ -67,7 +68,7 @@ TGraphErrors* Angular::Comparator::ReadTheo(const std::string& file)
     eBW *= TMath::DegToRad();
     // Get starting bin centre
     double start {};
-    for(double x = eMin; x > 0; x -= eBW)
+    for(double x = eMin; x > tMin; x -= eBW)
         start = x;
     // And create theoretical graph with the same binning!
     auto* ret {new TGraphErrors};
@@ -156,7 +157,7 @@ TVirtualPad* Angular::Comparator::Draw(const TString& title, bool logy, bool wit
 {
     // Draw all using a TMultiGraph
     fMulti = new TMultiGraph;
-    fMulti->SetTitle((fName + " ;#theta_{CM} [#circ];d#sigma / d#Omega [mb / sr]").c_str());
+    fMulti->SetTitle((fName + ";#theta_{" + (gIsLab ? "Lab" : "CM") + "} [#circ];d#sigma / d#Omega [mb / sr]").c_str());
     // Create a legend
     auto* leg {BuildLegend()};
     // 1-> Add experimental
@@ -238,7 +239,8 @@ TCanvas* Angular::Comparator::DrawTheo()
 {
     // Create multigraph
     auto* mg {new TMultiGraph};
-    mg->SetTitle((fName + " models;#theta_{CM} [#circ];d#sigma / d#Omega [mb / sr]").c_str());
+    mg->SetTitle(
+        (fName + " models;#theta_{" + (gIsLab ? "Lab" : "CM") + "} [#circ];d#sigma / d#Omega [mb / sr]").c_str());
     // Legend
     auto* leg {BuildLegend()};
     // Add graphs
@@ -319,7 +321,7 @@ TCanvas* Angular::Comparator::ScaleToExp(const std::string& model, PhysUtils::Ex
     }
 
     auto* mg {new TMultiGraph};
-    mg->SetTitle(TString::Format("Eff. for %s;#theta_{CM} [#circ];#epsilon", model.c_str()));
+    mg->SetTitle(TString::Format("Eff. for %s;#theta_{%s} [#circ];#epsilon", model.c_str(), gIsLab ? "Lab" : "CM"));
     gEff->SetMarkerStyle(24);
     gEff->SetLineWidth(2);
     gEff->SetLineColor(kMagenta);
@@ -341,7 +343,7 @@ TCanvas* Angular::Comparator::QuotientPerPoint()
 {
     // Create quotients
     auto* mg {new TMultiGraph};
-    mg->SetTitle("Quotient exp / theo;#theta_{CM} [#circ];Quotient exp / theo");
+    mg->SetTitle(TString::Format("Quotient exp / theo;#theta_{%s} [#circ];Quotient exp / theo", gIsLab ? "Lab" : "CM"));
     for(const auto& [name, gtheo] : fTheo)
     {
         auto* gq {new TGraphErrors};

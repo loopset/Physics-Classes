@@ -14,6 +14,7 @@
 
 #include "Math/IntegratorOptions.h"
 
+#include "AngGlobals.h"
 #include "FitData.h"
 #include "FitModel.h"
 #include "FitPlotter.h"
@@ -371,10 +372,11 @@ TCanvas* Angular::Fitter::DrawCounts(bool both, const TString& title)
     leg->SetNColumns(2);
     // Integral
     auto* mg {new TMultiGraph};
+    TString label {gIsLab ? "#theta_{Lab}" : "#theta_{CM}"};
     if(fIvs)
-        mg->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} [#circ];Counts");
+        mg->SetTitle(TString::Format("Counts per %s interval;%s [#circ];Counts", label.Data(), label.Data()));
     else
-        mg->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} interval idx;Counts");
+        mg->SetTitle(TString::Format("Counts per %s interval;%s interval idx;Counts", label.Data(), label.Data()));
     int idx {0};
     for(const auto& [key, counts] : fIgCounts)
     {
@@ -388,9 +390,9 @@ TCanvas* Angular::Fitter::DrawCounts(bool both, const TString& title)
     // Counts
     auto* mc {new TMultiGraph};
     if(fIvs)
-        mc->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} [#circ];Counts");
+        mc->SetTitle(TString::Format("Counts per %s interval;%s [#circ];Counts", label.Data(), label.Data()));
     else
-        mc->SetTitle("Counts per #theta_{CM} interval;#theta_{CM} interval idx;Counts");
+        mc->SetTitle(TString::Format("Counts per %s interval;%s interval idx;Counts", label.Data(), label.Data()));
 
     idx = 0;
     for(const auto& [key, counts] : fSumCounts)

@@ -1,11 +1,11 @@
 #ifndef Interpolators_h
 #define Interpolators_h
 
-#include "TCanvas.h"
 #include "TEfficiency.h"
 #include "TGraphAsymmErrors.h"
 #include "TGraphErrors.h"
 #include "TMultiGraph.h"
+#include "TVirtualPad.h"
 
 #include <string>
 #include <unordered_map>
@@ -17,6 +17,7 @@ private:
     std::unordered_map<std::string, TEfficiency*> fEff {};
     std::unordered_map<std::string, TGraphAsymmErrors*> fGraph {};
     int fMeanDiv {5};
+    bool fIsLab {}; //!< Infer from efficiency name if we're in Lab frame instead of standard CM
 
 public:
     Efficiency() = default;
@@ -39,7 +40,7 @@ public:
     void SetMeanDiv(int div) { fMeanDiv = div; }
 
     // Others
-    TCanvas* Draw(bool multigraph = true, const TString& title = "");
+    TVirtualPad* Draw(bool multigraph = true, const TString& title = "", TVirtualPad* par = nullptr);
 
     void SaveAs(const std::string& file);
 

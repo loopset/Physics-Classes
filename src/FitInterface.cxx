@@ -458,6 +458,19 @@ std::optional<T> Fitters::Interface::GetCompOpt(const std::string& opt, const st
         return std::nullopt;
 }
 
+void Fitters::Interface::SetCompConfig(const std::string& key, const std::string& value)
+{
+    if(fCompConf.count("Draw"))
+    {
+        // Locate key
+        auto& vec {fCompConf["Draw"]};
+        auto it {std::find_if(vec.begin(), vec.end(),
+                              [&](const std::pair<std::string, std::string>& pair) { return pair.first == key; })};
+        if(it != vec.end())
+            it->second = value;
+    }
+}
+
 void Fitters::Interface::DoComp()
 {
     // Get general configuration

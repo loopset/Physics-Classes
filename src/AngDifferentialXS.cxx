@@ -6,6 +6,7 @@
 #include "TMath.h"
 #include "TString.h"
 
+#include "AngGlobals.h"
 #include "PhysColors.h"
 
 #include <cmath>
@@ -17,14 +18,14 @@
 #include <string>
 #include <vector>
 
-void Angular::DifferentialXS::Do(const std::string& peak)
+void Angular::DifferentialXS::Do(const std::vector<double>& N, const std::string& peak)
 {
-    // Get counts by interval for peak
-    auto N {fFitter->GetIgCountsFor(peak)};
+    TString label {gIsLab ? "Lab" : "CM"};
     // Init TGraphErrors
     fXS[peak] = new TGraphErrors;
-    fXS[peak]->SetNameTitle(TString::Format("xs%s", peak.c_str()),
-                            TString::Format("%s;#theta_{CM} [#circ];d#sigma / d#Omega [mb / sr]", peak.c_str()));
+    fXS[peak]->SetNameTitle(
+        TString::Format("xs%s", peak.c_str()),
+        TString::Format("%s;#theta_{%s} [#circ];d#sigma / d#Omega [mb / sr]", peak.c_str(), label.Data()));
     // Run for each interval
     for(int iv = 0; iv < N.size(); iv++)
     {
@@ -95,7 +96,13 @@ double Angular::DifferentialXS::Uncertainty(const std::string& peak, double N, d
 void Angular::DifferentialXS::DoFor(const std::vector<std::string>& peaks)
 {
     for(const auto& peak : peaks)
-        Do(peak);
+        Do(fFitter->GetIgCountsFor(peak), peak);
+}
+
+void Angular::DifferentialXS::DoFor(TGraphErrors* gexp, const std::string& peak)
+{
+    std::vector<double> N(gexp->GetY(), gexp->GetY() + gexp->GetN());
+    Do(N, peak);
 }
 
 TCanvas* Angular::DifferentialXS::Draw(const TString& title) const

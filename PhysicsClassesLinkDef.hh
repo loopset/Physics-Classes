@@ -20,6 +20,7 @@
 // ANGULAR
 #pragma link C++ namespace Angular;
 
+#pragma link C++ global Angular::gIsLab;
 #pragma link C++ class Angular::Intervals;
 #pragma link C++ class Angular::Fitter;
 #pragma link C++ class Angular::DifferentialXS;

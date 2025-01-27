@@ -32,8 +32,13 @@ void Interpolators::Efficiency::Add(const std::string& peak, const std::string& 
     auto eff {f->Get<TEfficiency>(name.c_str())};
     if(!eff)
         throw std::runtime_error("Efficiency::Add(): could not read " + name + " key in file " + file);
+    // Determine whether is lab from name
+    TString str {eff->GetName()};
+    str.ToLower();
+    if(str.Contains("lab"))
+        fIsLab = true;
     // Push to map
-    eff->SetTitle((peak + ";#theta_{CM} [#circ];#epsilon").c_str());
+    eff->SetTitle(TString::Format("%s;#theta_{%s} [#circ];#epsilon", peak.c_str(), fIsLab ? "Lab" : "CM"));
     fEff[peak] = eff;
     // Create graph
     AddGraph(peak, eff);
@@ -41,8 +46,13 @@ void Interpolators::Efficiency::Add(const std::string& peak, const std::string& 
 
 void Interpolators::Efficiency::Add(const std::string& peak, TEfficiency* eff)
 {
+    // Determine whether is lab from name
+    TString str {eff->GetName()};
+    str.ToLower();
+    if(str.Contains("lab"))
+        fIsLab = true;
     fEff[peak] = eff;
-    fEff[peak]->SetTitle(peak.c_str());
+    fEff[peak]->SetNameTitle(peak.c_str(), peak.c_str());
     AddGraph(peak, eff);
 }
 
@@ -116,14 +126,23 @@ double Interpolators::Efficiency::GetYaxisRange(TMultiGraph* mg)
     return 1.2 * ymax;
 }
 
-TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)
+TVirtualPad* Interpolators::Efficiency::Draw(bool multigraph, const TString& title, TVirtualPad* pad)
 {
-    static int cEffIdx {};
-    auto* c {new TCanvas {TString::Format("cEff%d", cEffIdx), (title.Length()) ? title : "Interpolators::Efficiency"}};
-    cEffIdx++;
+    TVirtualPad* c {};
+    if(pad)
+        c = pad;
+    else
+    {
+        static int cEffIdx {};
+        auto canvas =
+            new TCanvas {TString::Format("cEff%d", cEffIdx), (title.Length()) ? title : "Interpolators::Efficiency"};
+        cEffIdx++;
+        if(!multigraph)
+            canvas->DivideSquare(fEff.size());
+        c = canvas;
+    }
     if(!multigraph)
     {
-        c->DivideSquare(fEff.size());
         int idx {1};
         for(const auto& [_, g] : fEff)
         {
@@ -136,7 +155,8 @@ TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)
     else
     {
         auto* mg {new TMultiGraph};
-        mg->SetTitle(";#theta_{CM} [#circ];#epsilon");
+        mg->SetTitle(TString::Format("%s;#theta_{%s} [#circ];#epsilon", ((pad && title.Length()) ? title : "").Data(),
+                                     fIsLab ? "Lab" : "CM"));
         for(const auto& [_, eff] : fEff)
         {
             // Get new TGraph to keep this classes independent of TMultiGraph
@@ -155,6 +175,7 @@ TCanvas* Interpolators::Efficiency::Draw(bool multigraph, const TString& title)
         mg->SetMaximum(ymax);
         gPad->Update();
         auto leg {c->BuildLegend()};
+        c->GetListOfPrimitives()->RemoveLast();
         leg->SetNColumns(fEff.size() / 5 + 1); // 5 items per legend column
         leg->Draw();
     }

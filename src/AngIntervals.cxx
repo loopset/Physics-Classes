@@ -4,15 +4,19 @@
 
 #include "TCanvas.h"
 #include "TF1.h"
+#include "TFile.h"
 #include "TH1.h"
 #include "THStack.h"
 #include "TMath.h"
 #include "TString.h"
 #include "TVirtualPad.h"
 
+#include "AngGlobals.h"
 #include "FitUtils.h"
 
+#include <memory>
 #include <mutex>
+#include <stdexcept>
 
 Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DModel& model, double step, int nps)
 {
@@ -26,15 +30,16 @@ Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DMod
     // Init vector for phase spaces
     fHsPS.resize(nps);
     // Init histograms and solid angle values
+    TString label {gIsLab ? "#theta_{Lab}" : "#theta_{CM}"};
     int idx {};
     for(const auto& [min, max] : fRanges)
     {
         int nbins {model.fNbinsX};
         double hxmax {model.fXUp};
         double hxmin {model.fXLow};
-        fHs.push_back(new TH1D {TString::Format("hCM%d", idx),
-                                TString::Format("#theta_{CM} #in [%.2f, %.2f)#circ;E_{x} [MeV];Counts per %.0f keV",
-                                                min, max, (hxmax - hxmin) / nbins * 1e3),
+        fHs.push_back(new TH1D {TString::Format("hIvs%d", idx),
+                                TString::Format("%s #in [%.2f, %.2f)#circ;E_{x} [MeV];Counts per %.0f keV",
+                                                label.Data(), min, max, (hxmax - hxmin) / nbins * 1e3),
                                 nbins, hxmin, hxmax});
         fHs.back()->SetDirectory(
             nullptr); // not added to gROOT list of histograms (avoid warning if creating Intevals in for loop)
@@ -43,8 +48,8 @@ Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DMod
         for(int ps = 0; ps < nps; ps++)
         {
             fHsPS[ps].push_back(
-                new TH1D {TString::Format("hPS%dCM%d", ps, idx),
-                          TString::Format("PS % d #theta_{CM} #in [%.2f, %.2f)#circ;E_{x} [MeV]", ps, min, max),
+                new TH1D {TString::Format("hPS%dIvs%d", ps, idx),
+                          TString::Format("PS %d %s #in [%.2f, %.2f)#circ;E_{x} [MeV]", ps, label.Data(), min, max),
                           model.fNbinsX, model.fXLow, model.fXUp});
         }
         idx++;
@@ -143,4 +148,21 @@ TCanvas* Angular::Intervals::Draw(const TString& title) const
             gPad->BuildLegend();
     }
     return c;
+}
+
+void Angular::Intervals::Read(const std::string& file)
+{
+    auto f {std::make_unique<TFile>(file.c_str())};
+    auto* intervals {f->Get<Intervals>("Intervals")};
+    if(!intervals)
+        throw std::runtime_error("Intervals::Read(): cannot locate key Intervals in file");
+    fRanges = intervals->GetRanges();
+    fOmegas = intervals->GetOmegas();
+    delete intervals;
+}
+
+void Angular::Intervals::Write(const std::string& file)
+{
+    auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
+    f->WriteObject(this, "Intervals");
 }
