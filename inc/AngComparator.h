@@ -63,15 +63,21 @@ public:
     // Canvas with ratio per point
     TCanvas* QuotientPerPoint();
 
-    // Retrieve SF
+    // Replace theretical graph with argument. Useful to override CM xs to Lab
+    void Replace(const std::string& name, TGraphErrors* gnew);
+
+    // Getters
     double GetSF(const std::string& model);
     double GetuSF(const std::string& model);
+    const std::vector<std::string>& GetKeys() const { return fKeys; }
+    const std::unordered_map<std::string, TGraphErrors*> GetTheoGraphs() const { return fTheo; }
 
     // Save in file
     void Write(const std::string& file);
 
 private:
-    TGraphErrors* ReadTheo(const std::string& file);
+    TGraphErrors* ReadFile(const std::string& file);
+    TGraphErrors* ProcessTheo(TGraphErrors* theo);
     TGraphErrors* GetFitGraph(TGraphErrors* g, TF1* f);
     TLegend* BuildLegend(double width = 0.25, double height = 0.2);
 };

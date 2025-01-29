@@ -471,7 +471,23 @@ void Fitters::Interface::SetCompConfig(const std::string& key, const std::string
     }
 }
 
-void Fitters::Interface::DoComp()
+void Fitters::Interface::FillComp()
+{
+    for(auto& [state, comp] : fComparators)
+    {
+        if(fCompConf.count(state))
+        {
+            for(const auto& [key, file] : fCompConf[state])
+            {
+                // Check whether is file path; if not, it is a setting
+                if(file.find("/") != std::string::npos)
+                    comp.Add(key, file);
+            }
+        }
+    }
+}
+
+void Fitters::Interface::FitComp()
 {
     // Get general configuration
     auto logy {GetCompOpt<bool>("logy").value()};
@@ -496,17 +512,7 @@ void Fitters::Interface::DoComp()
     int ip {1}; // index of pad
     for(auto& [state, comp] : fComparators)
     {
-        // If there are theoretical predictions
-        if(fCompConf.count(state))
-        {
-            for(const auto& [key, file] : fCompConf[state])
-            {
-                // Check whether is file path; if not, it is a setting
-                if(file.find("/") != std::string::npos)
-                    comp.Add(key, file);
-            }
-            comp.Fit();
-        }
+        comp.Fit();
         if(ip > npads)
         {
             ip = 1;
@@ -531,6 +537,12 @@ void Fitters::Interface::DoComp()
         }
         gROOT->SetSelectedPad(nullptr); // to avoid issues later with DrawClone
     }
+}
+
+void Fitters::Interface::DoComp()
+{
+    FillComp();
+    FitComp();
 }
 
 Fitters::Interface::Key Fitters::Interface::GetKeyOfGuess(double guess, double w)

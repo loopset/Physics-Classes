@@ -24,6 +24,7 @@
 #include "PhysExperiment.h"
 #include "PhysSF.h"
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -34,7 +35,7 @@
 void Angular::Comparator::Add(const std::string& name, const std::string& file, int lc, int ls, int lw)
 {
     // Read any two column part of a text file
-    fTheo[name] = ReadTheo(file);
+    fTheo[name] = ReadFile(file);
     // Set title
     fTheo[name]->SetTitle(name.c_str());
     // And add key
@@ -43,20 +44,46 @@ void Angular::Comparator::Add(const std::string& name, const std::string& file, 
     fStyles[name] = {lc, ls, lw};
 }
 
-TGraphErrors* Angular::Comparator::ReadTheo(const std::string& file)
+void Angular::Comparator::Replace(const std::string& name, TGraphErrors* gnew)
+{
+    if(fTheo.count(name))
+        delete fTheo[name];
+    // Clone to avoid modifications of passed graph
+    auto* clone {(TGraphErrors*)gnew->Clone()};
+    fTheo[name] = ProcessTheo(clone);
+    // And delete clone once processed
+    delete clone;
+    // Set title
+    fTheo[name]->SetTitle(name.c_str());
+    // And add key in case is was not there
+    auto it {std::find(fKeys.begin(), fKeys.end(), name)};
+    if(it == fKeys.end())
+        fKeys.push_back(name);
+    // And default line styles 
+    if(!fStyles.count(name))
+        fStyles[name] = {-1, 1, 3};
+}
+
+TGraphErrors* Angular::Comparator::ReadFile(const std::string& file)
+{
+    TGraphErrors theo {file.c_str(), "%lg %lg"};
+    return ProcessTheo(&theo);
+}
+
+TGraphErrors* Angular::Comparator::ProcessTheo(TGraphErrors* theo)
 {
     // INFO: 24/01/2025. Theoretical graph is preprocessed
     //  so as it has the same binning as the experimental
-    //  and the bin content the the INTEGRAL in that bin width averaged by it
+    //  and the bin content is the INTEGRAL in that bin width averaged by its width
+
     // Read the content
-    TGraphErrors theo {file.c_str(), "%lg %lg"};
     // Convert x axis to rad
-    theo.Scale(TMath::DegToRad(), "x");
+    theo->Scale(TMath::DegToRad(), "x");
     // Build function to integrate in bin!
-    TF1 func {"func", [&](double* x, double* p) { return theo.Eval(x[0], nullptr, "S"); }, 0, 180, 0};
+    TF1 func {"func", [&](double* x, double* p) { return theo->Eval(x[0], nullptr, "S"); }, 0, TMath::TwoPi(), 0};
     // Minimum and maximum for theoretical graph
-    auto tMin {theo.GetPointX(0)};
-    auto tMax {theo.GetPointX(theo.GetN() - 1)};
+    auto tMin {theo->GetPointX(0)};
+    auto tMax {theo->GetPointX(theo->GetN() - 1)};
     // Min and max of experimental xs in rad units
     auto eMin {fExp->GetPointX(0) * TMath::DegToRad()};
     auto eMax {fExp->GetPointX(fExp->GetN() - 1) * TMath::DegToRad()};
@@ -106,6 +133,8 @@ void Angular::Comparator::Fit(double xmin, double xmax)
     }
     // Set fit range for later
     fFitRange = {xmin, xmax};
+    if(!fTheo.size())
+        return;
     // Fit is based on a TSpline
     for(const auto& name : fKeys)
     {
@@ -343,9 +372,10 @@ TCanvas* Angular::Comparator::QuotientPerPoint()
 {
     // Create quotients
     auto* mg {new TMultiGraph};
-    mg->SetTitle(TString::Format("Quotient exp / theo;#theta_{%s} [#circ];Quotient exp / theo", gIsLab ? "Lab" : "CM"));
-    for(const auto& [name, gtheo] : fTheo)
+    mg->SetTitle(TString::Format("%s;#theta_{%s} [#circ];Quotient exp / theo", fName.c_str(), gIsLab ? "Lab" : "CM"));
+    for(const auto& key : fKeys)
     {
+        auto& gtheo {fTheo[key]};
         auto* gq {new TGraphErrors};
         for(int p = 0; p < fExp->GetN(); p++)
         {
@@ -358,7 +388,7 @@ TCanvas* Angular::Comparator::QuotientPerPoint()
             gq->SetPoint(p, xexp, yexp / ytheo);
             gq->SetPointError(p, 0, uq);
         }
-        gq->SetTitle(name.c_str());
+        gq->SetTitle(key.c_str());
         gq->SetMarkerStyle(24);
         gq->SetLineWidth(2);
         mg->Add(gq);

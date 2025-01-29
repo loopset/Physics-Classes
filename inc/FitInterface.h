@@ -71,6 +71,8 @@ public:
     void AddAngularDistribution(const Key& key, TGraphErrors* gexp);
     void ReadCompConfig(const std::string& file);
     void SetCompConfig(const std::string& key, const std::string& value);
+    void FillComp();
+    void FitComp();
     void DoComp();
 
     // Getters
