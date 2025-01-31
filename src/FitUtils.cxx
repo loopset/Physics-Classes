@@ -45,14 +45,16 @@ void Fitters::DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1
     for(auto& [key, h] : hs)
     {
         TString rstr {key};
-        bool isPeak {rstr.Contains("g") || rstr.Contains("v")};
+        bool isPS {rstr.Contains("ps")};
         h->SetLineWidth(2);
         h->SetFillStyle(0);
-        if(idx < fills.size() && isPeak)
+        if(idx < fills.size() && isPS)
+        {
             h->SetFillStyle(fills[idx]);
-        leg->AddEntry(h, (labels.count(key) ? labels.at(key) : key).c_str(), (isPeak) ? "lf" : "l");
+            idx++;
+        }
+        leg->AddEntry(h, (labels.count(key) ? labels.at(key) : key).c_str(), isPS ? "lf" : "l");
         stack->Add(h);
-        idx++;
     }
     stack->Draw("nostack plc pfc same");
     if(hs.size() > 4)
@@ -118,6 +120,11 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
 std::pair<Fitters::Runner::Init, Fitters::Runner::Init> Fitters::ReadInit(const std::string& name)
 {
     auto file {std::make_unique<TFile>(name.c_str())};
+    if(file->IsZombie())
+    {
+        std::cout << BOLDRED << "Fitters::ReadInit(): file" << name << " does not exist!" << RESET << '\n';
+        return {};
+    }
     // Read parameter names
     auto* names {file->Get<std::vector<std::string>>("ParNames")};
     auto* res {file->Get<TFitResult>("FitResult")};

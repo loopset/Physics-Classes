@@ -439,6 +439,20 @@ void Fitters::Interface::ReadCompConfig(const std::string& file)
     }
 }
 
+std::vector<int> Fitters::Interface::SplitString(const std::string& str)
+{
+    std::vector<int> ret;
+    std::stringstream ss {str};
+    std::string token;
+    while(std::getline(ss, token, ','))
+    {
+        token.erase(0, token.find_first_not_of(" \t\n\r"));
+        token.erase(token.find_last_not_of(" \t\n\r") + 1);
+        ret.push_back(std::stoi(token));
+    }
+    return ret;
+}
+
 template <typename T>
 std::optional<T> Fitters::Interface::GetCompOpt(const std::string& opt, const std::string& header)
 {
@@ -449,10 +463,14 @@ std::optional<T> Fitters::Interface::GetCompOpt(const std::string& opt, const st
                           [&](const std::pair<std::string, std::string>& pair) { return pair.first == opt; })};
     if(it != vec.end())
     {
-        if constexpr(std::is_arithmetic_v<T>)
+        if constexpr(std::is_arithmetic_v<T>)                   // int, double, bool
             return std::optional<T> {(T)std::stod(it->second)}; // str to double and then to T type
-        else
+        else if constexpr(std::is_same_v<T, std::string>)       // only string
             return std::optional<std::string>(it->second);
+        else if constexpr(!std::is_scalar_v<T>) // vector
+            return std::optional<std::vector<int>>(SplitString(it->second));
+        else
+            throw std::runtime_error("Interface::GetCompOpt(): if else constexpr failed");
     }
     else
         return std::nullopt;
@@ -473,15 +491,37 @@ void Fitters::Interface::SetCompConfig(const std::string& key, const std::string
 
 void Fitters::Interface::FillComp()
 {
+    // Styling options
+    auto lc {GetCompOpt<std::vector<int>>("lc")};
+    auto ls {GetCompOpt<std::vector<int>>("ls")};
+    auto useStyle {lc.has_value()};
+
     for(auto& [state, comp] : fComparators)
     {
         if(fCompConf.count(state))
         {
+            int idx {};
             for(const auto& [key, file] : fCompConf[state])
             {
                 // Check whether is file path; if not, it is a setting
                 if(file.find("/") != std::string::npos)
-                    comp.Add(key, file);
+                {
+                    // if available lc and ls
+                    if(useStyle)
+                    {
+                        int c {1};
+                        if(idx < lc.value().size())
+                            c = lc.value()[idx];
+                        int s {1};
+                        if(ls.has_value())
+                            if(idx < ls.value().size())
+                                s = ls.value()[idx];
+                        comp.Add(key, file, c, s);
+                    }
+                    else
+                        comp.Add(key, file);
+                    idx++;
+                }
             }
         }
     }
@@ -521,7 +561,9 @@ void Fitters::Interface::FitComp()
         // Draw!
         // But first check for local options!
         auto localLogy {GetCompOpt<bool>("logy", state)};
-        comp.Draw(state, (localLogy ? localLogy.value() : logy), withSF, offset, cs[ic]->cd(ip));
+        auto localOffset {GetCompOpt<int>("offset", state)};
+        comp.Draw(state, (localLogy ? localLogy.value() : logy), withSF, (localOffset ? localOffset.value() : offset),
+                  cs[ic]->cd(ip));
         ip++;
     }
     // And save
@@ -543,6 +585,17 @@ void Fitters::Interface::DoComp()
 {
     FillComp();
     FitComp();
+}
+
+void Fitters::Interface::WriteComp(const std::string& file)
+{
+    // Open file
+    auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
+    // For each comparator, write!
+    for(const auto& key : fKeys)
+        fComparators[key].Write(key, ""); // file not specified: save in current one
+    // Save also list of keys
+    f->WriteObject(&fKeys, "Keys");
 }
 
 Fitters::Interface::Key Fitters::Interface::GetKeyOfGuess(double guess, double w)

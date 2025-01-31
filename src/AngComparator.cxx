@@ -59,7 +59,7 @@ void Angular::Comparator::Replace(const std::string& name, TGraphErrors* gnew)
     auto it {std::find(fKeys.begin(), fKeys.end(), name)};
     if(it == fKeys.end())
         fKeys.push_back(name);
-    // And default line styles 
+    // And default line styles
     if(!fStyles.count(name))
         fStyles[name] = {-1, 1, 3};
 }
@@ -237,7 +237,10 @@ TVirtualPad* Angular::Comparator::Draw(const TString& title, bool logy, bool wit
     fMulti->Draw((haveCustomColor) ? "a" : "a plc pmc");
     // Set ranges
     if(fFitRange.first > 0 && fFitRange.second > 0)
-        fMulti->GetXaxis()->SetLimits(fFitRange.first - offset, fFitRange.second + offset);
+    {
+        auto xmin {fFitRange.first - offset};
+        fMulti->GetXaxis()->SetLimits((xmin < 0) ? 0 : xmin, fFitRange.second + offset);
+    }
     if(isTheo || logy)
     {
         if(isTheo)
@@ -245,7 +248,9 @@ TVirtualPad* Angular::Comparator::Draw(const TString& title, bool logy, bool wit
             // Range in X
             auto xmin {TMath::MinElement(fExp->GetN(), fExp->GetX())};
             auto xmax {TMath::MaxElement(fExp->GetN(), fExp->GetX())};
-            fMulti->GetXaxis()->SetLimits(xmin - offset, xmax + offset);
+            xmin -= offset;
+            xmax += offset;
+            fMulti->GetXaxis()->SetLimits((xmin < 0) ? 0 : xmin, xmax);
         }
         // Range in Y
         auto ymin {TMath::MinElement(fExp->GetN(), fExp->GetY())};
@@ -439,4 +444,31 @@ void Angular::Comparator::Write(const std::string& file)
     f->WriteObject(&names, "Models");
     f->WriteObject(&sfs, "SFs");
     f->WriteObject(fMulti, "MultiGraph");
+}
+
+void Angular::Comparator::Write(const std::string& key, const std::string& file)
+{
+    bool weOwnFile {};
+    TFile* f {};
+    if(file.length())
+    {
+        f = new TFile {file.c_str(), "recreate"};
+        weOwnFile = true;
+    }
+    else
+        f = gFile;
+    // Create collection
+    PhysUtils::SFCollection sfcol;
+    for(const auto& [model, res] : fRes)
+        sfcol.Add(model, {res.Parameter(0), res.ParError(0), res.Chi2() / res.Ndf(), (int)res.Ndf()});
+    // Write!
+    f->cd();
+    f->WriteObject(&sfcol, (key + "_sfs").c_str());
+    if(fMulti)
+        f->WriteObject(fMulti, (key + "_mg").c_str());
+    if(weOwnFile)
+    {
+        f->Close();
+        delete f;
+    }
 }

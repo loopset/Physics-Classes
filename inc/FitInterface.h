@@ -74,6 +74,7 @@ public:
     void FillComp();
     void FitComp();
     void DoComp();
+    void WriteComp(const std::string& file);
 
     // Getters
     const Initial& GetInitial() const { return fPars; }
@@ -111,6 +112,7 @@ private:
     std::string FormatLabel(const std::string& label);
     template <typename T>
     std::optional<T> GetCompOpt(const std::string& opt, const std::string& header = "Draw");
+    std::vector<int> SplitString(const std::string& str);
 };
 } // namespace Fitters
 

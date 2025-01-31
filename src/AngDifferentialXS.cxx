@@ -5,6 +5,7 @@
 #include "TGraphErrors.h"
 #include "TMath.h"
 #include "TString.h"
+#include "TSystem.h"
 
 #include "AngGlobals.h"
 #include "PhysColors.h"
@@ -134,10 +135,12 @@ TGraphErrors* Angular::DifferentialXS::Get(const std::string& peak) const
 void Angular::DifferentialXS::Write(const std::string& dir, const std::string& name) const
 {
     // Run for each peak
+    auto pathXS {dir + "/xs/"};
+    gSystem->mkdir(pathXS.c_str());
     for(const auto& [peak, g] : fXS)
     {
         // 1-> Init output file
-        std::ofstream streamer {(dir + peak + "_" + name + ".dat")};
+        std::ofstream streamer {(pathXS + peak + "_" + name + ".dat")};
         if(!streamer)
             throw std::runtime_error("DifferentialXS::Write: cannot open directory " + dir);
         // 2-> Push back from graph points
@@ -146,7 +149,7 @@ void Angular::DifferentialXS::Write(const std::string& dir, const std::string& n
         // 3-> Close
         streamer.close();
     }
-    // Save also in root format
+    // Save also in root format, but in upper directory
     auto* fout {new TFile {(dir + name + ".root").c_str(), "recreate"}};
     for(const auto& [peak, g] : fXS)
         g->Write(("g" + peak).c_str());

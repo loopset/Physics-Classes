@@ -39,6 +39,7 @@
 #pragma link C++ class PhysUtils::Colors;
 #pragma link C++ class PhysUtils::SpectroscopicFactor + ;
 #pragma link C++ class std::vector < PhysUtils::SpectroscopicFactor> + ;
+#pragma link C++ class PhysUtils::SFCollection + ;
 #pragma link C++ class PhysUtils::State + ;
 #pragma link C++ class std::vector < PhysUtils::State> + ;
 
