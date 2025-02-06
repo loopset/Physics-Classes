@@ -207,7 +207,7 @@ PhysOMP::KoningDelaroche::KoningDelaroche(int Z, int A, double energy) : OMP(Z, 
     frc = 1.198 + 0.697 * std::pow(fA, -2. / 3) + 12.994 * std::pow(fA, -5. / 3);
 
     // Declare parameters
-    double v1p {59.30 + 21 * (double)(fN - fZ) / fA - 0.024 * fA};
+    double v1p {59.30 + 21. * static_cast<double>(fN - fZ) / fA - 0.024 * fA};
     double v2p {0.007067 + 4.23e-6 * fA};
     double v3p {1.729e-5 + 1.136e-8 * fA};
     double v4p {7e-9};
@@ -216,8 +216,8 @@ PhysOMP::KoningDelaroche::KoningDelaroche(int Z, int A, double energy) : OMP(Z, 
     double w1p {14.667 + 0.009629 * fA};
     double w2p {73.55 + 0.0795 * fA};
 
-    double d1p {16 - 16 * (double)(fN - fZ) / fA};
-    double d2p {0.018 + 0.003802 / (1 + std::exp((double)(fA - 156.) / 8))};
+    double d1p {16 - 16 * static_cast<double>(fN - fZ) / fA};
+    double d2p {0.018 + 0.003802 / (1 + std::exp(static_cast<double>(fA - 156.) / 8))};
     double d3p {11.5};
 
     double vso1 {5.922 + 0.0030 * fA};
@@ -257,7 +257,7 @@ PhysOMP::CH89::CH89(int Z, int A, double energy) : OMP(Z, A, energy, 1, 1, "Chap
 {
 
     // Coulomb
-    frc = 1.24 + 0.12 * std::pow(fA, -1. / 3);
+    frc = 1.238 + 0.116 * std::pow(fA, -1. / 3);
     // Coulomb energy correction
     double Rc {frc * std::pow(fA, 1. / 3)};
     double Ec {6 * 1 * fZ * 1.44 / (5 * Rc)};
@@ -267,7 +267,7 @@ PhysOMP::CH89::CH89(int Z, int A, double energy) : OMP(Z, A, energy, 1, 1, "Chap
     double Ve {-0.299};
     double Vt {13.1};
     double Vte {0}; // "we found that Vte is not significantly different from zero"
-    double eps {(double)(fN - fZ) / fA};
+    double eps {static_cast<double>(fN - fZ) / fA};
     fVr = V0 + Ve * (fEnergy - Ec) + (Vt - Vte * (fEnergy - Ec)) * eps;
     frv = 1.25 - 0.225 * std::pow(fA, -1. / 3);
     fav = 0.69;

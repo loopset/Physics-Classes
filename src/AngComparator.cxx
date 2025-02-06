@@ -302,13 +302,17 @@ TCanvas* Angular::Comparator::ScaleToExp(const std::string& model, PhysUtils::Ex
         throw std::runtime_error("Comparator::ScaleToExp(): could not locate model " + model);
     // Get SF
     double theoSF {1};
+    double uTheoSF {0};
     if(SF != -1)
         theoSF = SF;
     else
     {
         auto fitSF {GetSF(model)};
         if(fitSF != -1)
+        {
             theoSF = fitSF;
+            uTheoSF = GetuSF(model);
+        }
     }
     // Compute binning
     double bwidth {gcounts->GetPointX(1) - gcounts->GetPointX(0)}; // deg
@@ -329,11 +333,13 @@ TCanvas* Angular::Comparator::ScaleToExp(const std::string& model, PhysUtils::Ex
         auto eff {N / denom};
         eff *= 1e27; // properly convert mb units to cm2 in xs * Nt
         // Compute uncertainty
-        auto coeffN {theoSF / (exp->GetNb() * exp->GetNt() * xstheo * Omega)};
+        auto coeffN {1. / (exp->GetNb() * exp->GetNt() * theoSF * xstheo * Omega)};
         auto uN {TMath::Sqrt(N)};
-        auto coeffNb {-theoSF * N / (exp->GetNt() * Omega * xstheo) / TMath::Power(exp->GetNb(), 2)};
+        auto coeffNb {-N / (exp->GetNt() * Omega * theoSF * xstheo) / TMath::Power(exp->GetNb(), 2)};
         auto uNb {exp->GetUNb()};
-        auto ueff {TMath::Sqrt(coeffN * coeffN * uN * uN + coeffNb * coeffNb * uNb * uNb)};
+        auto coeffSF {-N / (exp->GetNt() * exp->GetNb() * xstheo * Omega) / TMath::Power(theoSF, 2)};
+        auto ueff {TMath::Sqrt(coeffN * coeffN * uN * uN + coeffNb * coeffNb * uNb * uNb +
+                               coeffSF * coeffSF * uTheoSF * uTheoSF)};
         ueff *= 1e27;
         // Fill
         gEff->SetPoint(p, theta, eff);
