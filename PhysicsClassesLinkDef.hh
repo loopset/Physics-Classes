@@ -67,4 +67,9 @@
 #pragma link C++ class PhysOMP::KoningDelaroche;
 #pragma link C++ class PhysOMP::CH89;
 
+// Shell mode information
+#pragma link C++ class PhysUtils::QuantumNumbers + ;
+#pragma link C++ class PhysUtils::ModelData;
+#pragma link C++ class PhysUtils::ModelParser;
+
 #endif

@@ -8,6 +8,8 @@
 #include "TObject.h"
 #include "TROOT.h"
 
+#include "PhysSM.h"
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -38,6 +40,7 @@ public:
     void SetSF(const std::vector<std::string>& sf) { Fill(fSF, sf); }
     void SetJp(const std::vector<std::string>& jp) { Fill(fJp, jp); }
     void SetColors(const std::vector<int>& colors) { Fill(fColors, colors); };
+    void SetFromParser(PhysUtils::ModelParser* parser);
     void SetUniqueColor(int col);
     void SetColorsFromPalette();
 
@@ -107,10 +110,10 @@ private:
     std::pair<double, double> fYRange;
     int fNModels;
     double fWidth {5};
-    double fGap {4.5};
-    double fXaxisYpos {-0.5};
-    double fLabelOffset {+0.1};
-    double fInitialGap {0.75};
+    double fGap {8};
+    double fXaxisYpos {-0.75};
+    double fLabelOffset {+0.2};
+    double fInitialGap {5};
     TH2I* fHist;
     TGaxis* fYAxis;
     // Experimental info
@@ -121,8 +124,11 @@ private:
 public:
     ModelPlotter(double ymin, double ymax, int nmodels);
 
+    // Setters
     void AddModel(const ModelToPlot& model);
     void SetYaxisLabel(const std::string& label);
+
+    // Others
     TCanvas* Draw();
 
 private:

@@ -1,9 +1,11 @@
+#include "TBox.h"
 #include "TLatex.h"
-#include "TPave.h"
+#include "TString.h"
 #include "TStyle.h"
 #include "TVirtualPad.h"
 
 #include "ModelPlotter.h"
+#include "PhysSM.h"
 
 #include <iostream>
 #include <sstream>
@@ -84,6 +86,32 @@ std::string PlotUtils::ModelToPlot::FormatSF(double value, double unc)
     return str_val + "(" + std::to_string(unc_digits) + ")";
 }
 
+void PlotUtils::ModelToPlot::SetFromParser(PhysUtils::ModelParser* parser)
+{
+    std::vector<double> exs;
+    std::vector<double> gammas;
+    std::vector<std::string> sfs;
+    std::vector<std::string> jpis;
+    for(const auto& [_, vals] : parser->GetMap())
+    {
+        for(const auto& val : vals)
+        {
+            // Ex
+            exs.push_back(val.fEx);
+            // Gamma
+            gammas.push_back(val.fGamma);
+            // SF
+            sfs.push_back(TString::Format("%.2f", val.fSF).Data());
+            // Jpi
+            jpis.push_back(val.fQ.Format());
+        }
+    }
+    SetEx(exs);
+    SetGammas(gammas);
+    SetSF(sfs);
+    SetJp(jpis);
+}
+
 /////////////////////////////////////////////////////////////////////
 
 void PlotUtils::ModelPointers::Draw()
@@ -115,6 +143,9 @@ PlotUtils::ModelPlotter::ModelPlotter(double ymin, double ymax, int nmodels) : f
     fHist->GetXaxis()->SetAxisColor(0);
     fHist->GetYaxis()->SetLabelOffset(999);
     fHist->GetYaxis()->SetAxisColor(0);
+    fHist->GetYaxis()->SetNdivisions(520);
+    gStyle->SetGridColor(1); // in case one wants to draw a grid.
+    // otherwise the grid takes the color of the axis, and in this case it is white
 
     // Init new Y axis
     fYAxis = new TGaxis(0, fYRange.first, 0, fYRange.second, fYRange.first, fYRange.second, 510, "-R");
@@ -170,11 +201,10 @@ void PlotUtils::ModelPlotter::InitModel(int i)
         {
             auto w {gamma / 2};
             // Box
-            auto* box {new TPave {begin, ex - w, end, ex + w, 0, "ARC"}};
+            auto* box {new TBox {begin, ex - w, end, ex + w}};
             box->SetLineWidth(2);
             box->SetLineColor(fModels[i].GetColor(idx));
             box->SetFillColor(fModels[i].GetColor(idx));
-            box->SetShadowColor(fModels[i].GetColor(idx));
             fPointers[i].AddObj(box);
         }
         // Right labels
@@ -206,7 +236,7 @@ void PlotUtils::ModelPlotter::DrawModel(int i)
 
 TCanvas* PlotUtils::ModelPlotter::Draw()
 {
-    auto* cret {new TCanvas("cmodel")};
+    auto* cret {new TCanvas {"cmodel", "Comparison of models"}};
     // Delete frame
     cret->SetFrameLineColor(0);
     // Draw base
