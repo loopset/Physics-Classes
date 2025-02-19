@@ -37,19 +37,21 @@ public:
     std::string Format() const;
 };
 
-class ModelData
+class SMData
 {
 public:
     QuantumNumbers fQ {};
     double fEx {};
     double fSF {};
+    double fuSF {};
     double fGamma {};
 
 public:
-    ModelData() = default;
-    ModelData(double ex, double sf, double gamma = 0) : fEx(ex), fSF(sf), fGamma(gamma) {}
+    SMData() = default;
+    SMData(double ex, double sf, double gamma = 0) : fEx(ex), fSF(sf), fGamma(gamma) {}
+    void SetuSF(double usf) { fuSF = usf; }
     void AddQuantumNumbers(const QuantumNumbers& q) { fQ = q; }
-    friend bool operator<(const ModelData& a, const ModelData& b)
+    friend bool operator<(const SMData& a, const SMData& b)
     {
         if(a.fEx == b.fEx)
             return a.fSF > b.fSF;
@@ -58,27 +60,27 @@ public:
     inline void Print() const
     {
         std::cout << "---- ModelData ----" << '\n';
-        std::cout << " (Ex, SF) : (" << fEx << ", " << fSF << ")" << '\n';
+        std::cout << " (Ex, SF) : (" << fEx << ", " << fSF << " +- " << fuSF << ")" << '\n';
     }
 };
 
-class ModelParser
+class SMParser
 {
 public:
-    using QuantumMap = std::map<QuantumNumbers, std::set<ModelData>>;
+    using QuantumMap = std::map<QuantumNumbers, std::set<SMData>>;
 
 private:
     QuantumMap fMap {};
 
 public:
-    ModelParser() = default;
-    ModelParser(const std::vector<std::string>& files);
+    SMParser() = default;
+    SMParser(const std::vector<std::string>& files);
 
     // Setters
     void AddFile(const std::string& file) { ParseFile(file); }
     // Getters
     QuantumMap& GetMap() { return fMap; }
-    std::set<ModelData>& GetDataFor(const QuantumNumbers& q) { return fMap.at(q); }
+    std::set<SMData>& GetDataFor(const QuantumNumbers& q) { return fMap.at(q); }
 
     // Actions
     void ShiftEx();

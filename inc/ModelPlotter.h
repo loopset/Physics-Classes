@@ -40,7 +40,7 @@ public:
     void SetSF(const std::vector<std::string>& sf) { Fill(fSF, sf); }
     void SetJp(const std::vector<std::string>& jp) { Fill(fJp, jp); }
     void SetColors(const std::vector<int>& colors) { Fill(fColors, colors); };
-    void SetFromParser(PhysUtils::ModelParser* parser);
+    void SetFromParser(PhysUtils::SMParser* parser);
     void SetUniqueColor(int col);
     void SetColorsFromPalette();
 

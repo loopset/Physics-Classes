@@ -69,7 +69,7 @@
 
 // Shell mode information
 #pragma link C++ class PhysUtils::QuantumNumbers + ;
-#pragma link C++ class PhysUtils::ModelData;
-#pragma link C++ class PhysUtils::ModelParser;
+#pragma link C++ class PhysUtils::SMData;
+#pragma link C++ class PhysUtils::SMParser;
 
 #endif

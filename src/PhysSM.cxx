@@ -16,13 +16,13 @@ std::string PhysUtils::QuantumNumbers::Format() const
     return str.Data();
 }
 
-PhysUtils::ModelParser::ModelParser(const std::vector<std::string>& files)
+PhysUtils::SMParser::SMParser(const std::vector<std::string>& files)
 {
     for(const auto& file : files)
         ParseFile(file);
 }
 
-std::string PhysUtils::ModelParser::StripSpaces(std::string line)
+std::string PhysUtils::SMParser::StripSpaces(std::string line)
 {
     // Remove preceding spaces
     while(*line.begin() == ' ')
@@ -41,7 +41,7 @@ std::string PhysUtils::ModelParser::StripSpaces(std::string line)
     return line;
 }
 
-void PhysUtils::ModelParser::ParseFile(const std::string& file)
+void PhysUtils::SMParser::ParseFile(const std::string& file)
 {
     std::ifstream streamer {file};
     if(!streamer)
@@ -70,14 +70,14 @@ void PhysUtils::ModelParser::ParseFile(const std::string& file)
             auto sf {line.substr(44)};
             for(auto str : {&ex, &sf})
                 *str = StripSpaces(*str);
-            ModelData data {std::stod(ex), std::stod(sf)};
+            SMData data {std::stod(ex), std::stod(sf)};
             data.AddQuantumNumbers(currentQuantum);
             fMap[currentQuantum].insert(data);
         }
     }
 }
 
-void PhysUtils::ModelParser::ShiftEx()
+void PhysUtils::SMParser::ShiftEx()
 {
     // Find states with largest SF == ground state
     double max {-1111};
@@ -93,7 +93,7 @@ void PhysUtils::ModelParser::ShiftEx()
     // Shift
     for(auto& [key, vals] : fMap)
     {
-        std::set<ModelData> newSet {};
+        std::set<SMData> newSet {};
         for(auto& val : vals)
         {
             auto newData {val};
@@ -104,7 +104,7 @@ void PhysUtils::ModelParser::ShiftEx()
     }
 }
 
-void PhysUtils::ModelParser::MaskSFBelow(double thres)
+void PhysUtils::SMParser::MaskSFBelow(double thres)
 {
     for(auto& [key, vals] : fMap)
     {
@@ -118,7 +118,7 @@ void PhysUtils::ModelParser::MaskSFBelow(double thres)
     }
 }
 
-void PhysUtils::ModelParser::MaskExAbove(double thres)
+void PhysUtils::SMParser::MaskExAbove(double thres)
 {
     for(auto& [key, vals] : fMap)
     {

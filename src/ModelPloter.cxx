@@ -86,7 +86,7 @@ std::string PlotUtils::ModelToPlot::FormatSF(double value, double unc)
     return str_val + "(" + std::to_string(unc_digits) + ")";
 }
 
-void PlotUtils::ModelToPlot::SetFromParser(PhysUtils::ModelParser* parser)
+void PlotUtils::ModelToPlot::SetFromParser(PhysUtils::SMParser* parser)
 {
     std::vector<double> exs;
     std::vector<double> gammas;
@@ -136,6 +136,7 @@ PlotUtils::ModelPlotter::ModelPlotter(double ymin, double ymax, int nmodels) : f
     // Init histogram
     fHist = new TH2I("hmodel", "", fNModels, 0, (fInitialGap + fWidth) + (fNModels - 1) * (fGap + fWidth), 100,
                      fYRange.first, fYRange.second);
+    std::cout << "Xfinal: " << (fInitialGap + fWidth) + (fNModels - 1) * (fGap + fWidth) << '\n';
     // Hide stats
     fHist->SetStats(false);
     // Hide X axis
@@ -150,8 +151,8 @@ PlotUtils::ModelPlotter::ModelPlotter(double ymin, double ymax, int nmodels) : f
     // Init new Y axis
     fYAxis = new TGaxis(0, fYRange.first, 0, fYRange.second, fYRange.first, fYRange.second, 510, "-R");
     fYAxis->CenterTitle();
-    fYAxis->SetTextFont(gStyle->GetTextFont());
-    fYAxis->SetTextSize(gStyle->GetTextSize());
+    fYAxis->SetTitleFont(gStyle->GetTitleFont("Y"));
+    fYAxis->SetTitleSize(gStyle->GetTitleSize("Y"));
     fYAxis->SetLabelFont(gStyle->GetLabelFont("Y"));
     fYAxis->SetLabelSize(gStyle->GetLabelSize("Y"));
 }
@@ -182,8 +183,8 @@ void PlotUtils::ModelPlotter::InitModel(int i)
     // Label on X axis
     fPointers[i].SetXLabel(new TLatex(center, fXaxisYpos, fModels[i].GetName().c_str()));
     fPointers[i].GetXLabel()->SetTextAlign(23);
-    fPointers[i].GetXLabel()->SetTextFont(gStyle->GetTextFont());
-    fPointers[i].GetXLabel()->SetTextSize(gStyle->GetTextSize());
+    fPointers[i].GetXLabel()->SetTextFont(gStyle->GetTitleFont("X"));
+    fPointers[i].GetXLabel()->SetTextSize(gStyle->GetTitleSize("X"));
     // Lines and labels
     int idx {};
     for(const auto& ex : fModels[i].GetExs())
@@ -212,7 +213,7 @@ void PlotUtils::ModelPlotter::InitModel(int i)
         {
             auto label {new TLatex(end + fLabelOffset, ex, fModels[i].GetSF(idx).c_str())};
             label->SetTextFont(gStyle->GetTextFont());
-            label->SetTextSize(0.035);
+            label->SetTextSize(gStyle->GetTextSize());
             label->SetTextAlign(12);
             fPointers[i].AddRightLabel(label);
         }
@@ -221,7 +222,7 @@ void PlotUtils::ModelPlotter::InitModel(int i)
         {
             auto label {new TLatex(begin - fLabelOffset, ex, fModels[i].GetJp(idx).c_str())};
             label->SetTextFont(gStyle->GetTextFont());
-            label->SetTextSize(0.035);
+            label->SetTextSize(gStyle->GetTextSize());
             label->SetTextAlign(32);
             fPointers[i].AddLeftLabel(label);
         }
