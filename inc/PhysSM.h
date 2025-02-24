@@ -71,6 +71,8 @@ public:
 
 private:
     QuantumMap fMap {};
+    double fSFgs {}; //!< Ground-state SF
+    double fExgs {}; //!< Ground-state Ex
 
 public:
     SMParser() = default;
@@ -81,9 +83,12 @@ public:
     // Getters
     QuantumMap& GetMap() { return fMap; }
     std::set<SMData>& GetDataFor(const QuantumNumbers& q) { return fMap.at(q); }
+    double GetGroundStateEx() const { return fExgs; }
+    double GetGroundStateSF() const { return fSFgs; }
 
     // Actions
     void ShiftEx();
+    void SFRelativeToGS();
     void MaskSFBelow(double thresh);
     void MaskExAbove(double thres);
 

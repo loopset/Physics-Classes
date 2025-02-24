@@ -89,7 +89,9 @@ void PhysUtils::SMParser::ShiftEx()
                 max = val.fSF;
                 shift = val.fEx;
             }
-    // Print
+    // Save
+    fExgs = shift;
+    fSFgs = max;
     // Shift
     for(auto& [key, vals] : fMap)
     {
@@ -129,5 +131,20 @@ void PhysUtils::SMParser::MaskExAbove(double thres)
             else
                 it++;
         }
+    }
+}
+
+void PhysUtils::SMParser::SFRelativeToGS()
+{
+    for(auto& [key, vals] : fMap)
+    {
+        std::set<SMData> newSet {};
+        for(auto& val : vals)
+        {
+            auto newData {val};
+            newData.fSF /= fSFgs;
+            newSet.insert(newData);
+        }
+        fMap[key] = newSet;
     }
 }

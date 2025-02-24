@@ -76,6 +76,11 @@ std::string PlotUtils::ModelToPlot::FormatSF(double value, double unc)
     int decimals = -exponent + 1;
     double rounded_unc = std::round(unc * std::pow(10, decimals)) / std::pow(10, decimals);
     int unc_digits = std::round(rounded_unc * std::pow(10, decimals)); // Extract digits (e.g., 0.0026 → 26)
+    if(unc == 0)
+    {
+        decimals = 2;
+        unc_digits = 0;
+    }
 
     // Format value to match decimals
     std::ostringstream oss;

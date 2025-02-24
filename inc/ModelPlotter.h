@@ -46,7 +46,7 @@ public:
 
     // Getters
     std::string GetName() const { return fName; }
-    const std::vector<double>& GetExs() const { return fEx; }
+    std::vector<double>& GetExs() { return fEx; }
     double GetEx(int i) const { return fEx.at(i); }
     const std::vector<double>& GetGammas() const { return fGammas; }
     double GetGamma(int i) const { return fGammas.at(i); }
@@ -67,9 +67,9 @@ private:
     template <typename T>
     inline void Fill(std::vector<T>& to, const std::vector<T>& from)
     {
-        if(!(from.size() <= to.size()))
-            return;
-        for(int i = 0; i < from.size(); i++)
+        // if(!(from.size() <= to.size()))
+        //     return;
+        for(int i = 0; i < to.size(); i++)
             to[i] = from[i];
     }
 };
