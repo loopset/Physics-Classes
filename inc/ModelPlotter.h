@@ -122,7 +122,7 @@ private:
     std::vector<ModelPointers> fPointers;
 
 public:
-    ModelPlotter(double ymin, double ymax, int nmodels);
+    ModelPlotter(double ymin, double ymax, int nmodels, const std::string& title = "");
 
     // Setters
     void AddModel(const ModelToPlot& model);

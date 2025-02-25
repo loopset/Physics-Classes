@@ -136,10 +136,10 @@ void PlotUtils::ModelPointers::Draw()
 
 //////////////////////////////////////////////////////////////////////
 
-PlotUtils::ModelPlotter::ModelPlotter(double ymin, double ymax, int nmodels) : fYRange({ymin, ymax}), fNModels(nmodels)
+PlotUtils::ModelPlotter::ModelPlotter(double ymin, double ymax, int nmodels, const std::string& title) : fYRange({ymin, ymax}), fNModels(nmodels)
 {
     // Init histogram
-    fHist = new TH2I("hmodel", "", fNModels, 0, (fInitialGap + fWidth) + (fNModels - 1) * (fGap + fWidth), 100,
+    fHist = new TH2I("hmodel", title.c_str(), fNModels, 0, (fInitialGap + fWidth) + (fNModels - 1) * (fGap + fWidth), 100,
                      fYRange.first, fYRange.second);
     std::cout << "Xfinal: " << (fInitialGap + fWidth) + (fNModels - 1) * (fGap + fWidth) << '\n';
     // Hide stats
@@ -186,7 +186,7 @@ void PlotUtils::ModelPlotter::InitModel(int i)
     std::cout << "Center = " << center << '\n';
     std::cout << "===============" << '\n';
     // Label on X axis
-    fPointers[i].SetXLabel(new TLatex(center, fXaxisYpos, fModels[i].GetName().c_str()));
+    fPointers[i].SetXLabel(new TLatex(center, fYRange.first + fXaxisYpos, fModels[i].GetName().c_str()));
     fPointers[i].GetXLabel()->SetTextAlign(23);
     fPointers[i].GetXLabel()->SetTextFont(gStyle->GetTitleFont("X"));
     fPointers[i].GetXLabel()->SetTextSize(gStyle->GetTitleSize("X"));
