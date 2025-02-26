@@ -5,6 +5,8 @@
 // colorized output in std::cout
 #include "TColor.h"
 
+#include <string>
+#include <unordered_map>
 #include <vector>
 #define RESET "\033[0m"
 #define BLACK "\033[30m"              /* Black */
@@ -30,12 +32,18 @@ namespace PhysUtils
 class Colors
 {
 private:
-    std::vector<TColor*> fColors {};
+    std::vector<TColor*> fColors {};                                    //!< General colors
+    std::unordered_map<std::string, std::vector<TColor*>> fPalettes {}; //!< Palette colors
     static Colors* fInstance;
 
     Colors() { Init(); }
 
     void Init();
+
+    void AddPalette(const std::string& name, const std::vector<std::vector<int>>& vrgb, double norm = 255);
+    void AddMatplotlib();
+
+    void DrawFrom(const std::vector<TColor*>& colors, const std::string& title) const;
 
 public:
     static Colors* GetInstance();
@@ -43,9 +51,7 @@ public:
     Colors(Colors&) = delete;
     void operator=(const Colors&) = delete;
 
-    // Custom operator
-    int operator[](int i) const;
-    int Get(int i) { return operator[](i); }
+    int Get(int i, const std::string& pal = "");
     void Draw() const;
 };
 } // namespace PhysUtils

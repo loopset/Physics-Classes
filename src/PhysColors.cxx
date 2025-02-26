@@ -2,10 +2,15 @@
 
 #include "TBox.h"
 #include "TCanvas.h"
+#include "TString.h"
 #include "TText.h"
+#include "TVirtualPad.h"
 
+#include <ctime>
 #include <iostream>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 PhysUtils::Colors* PhysUtils::Colors::fInstance = nullptr;
 
@@ -36,18 +41,52 @@ void PhysUtils::Colors::Init()
         auto i {TColor::GetFreeColorIndex()};
         fColors.push_back(new TColor(i, r[c] / 255, g[c] / 255, b[c] / 255));
     }
+    // Add palettes
+    AddMatplotlib();
 };
 
-int PhysUtils::Colors::operator[](int i) const
+void PhysUtils::Colors::AddPalette(const std::string& name, const std::vector<std::vector<int>>& vrgb, double norm)
 {
-    if(i >= fColors.size())
-        return 1; // default to black
-    return fColors.at(i)->GetNumber();
+    for(int c = 0; c < vrgb.size(); c++)
+    {
+        auto i {TColor::GetFreeColorIndex()};
+        auto& vals {vrgb[c]};
+        fPalettes[name].push_back(
+            new TColor(i, (double)vals[0] / norm, (double)vals[1] / norm, (double)vals[2] / norm));
+    }
 }
 
-void PhysUtils::Colors::Draw() const
+void PhysUtils::Colors::AddMatplotlib()
 {
-    auto* c {new TCanvas {"cPhysColors", "PhysUtils::Colors canvas"}};
+    std::vector<std::vector<int>> tab20 {{31, 119, 180},  {174, 199, 232}, {255, 127, 14},  {255, 187, 120},
+                                         {44, 160, 44},   {152, 223, 138}, {214, 39, 40},   {255, 152, 150},
+                                         {148, 103, 189}, {197, 176, 213}, {140, 86, 75},   {196, 156, 148},
+                                         {227, 119, 194}, {247, 182, 210}, {127, 127, 127}, {199, 199, 199},
+                                         {188, 189, 34},  {219, 219, 141}, {23, 190, 207},  {158, 218, 229}};
+    AddPalette("mpl", tab20);
+}
+
+int PhysUtils::Colors::Get(int i, const std::string& pal)
+{
+    std::vector<TColor*>* ptr {};
+    if(!pal.length())
+        ptr = &fColors;
+    else
+    {
+        TString tstr {pal};
+        tstr.ToLower();
+        if(tstr.Contains("mpl")) // mpl tab20
+            ptr = &fPalettes["mpl"];
+    }
+    if(!ptr)
+        return 1;
+    if(i >= ptr->size())
+        return 1; // default to black
+    return ptr->at(i)->GetNumber();
+}
+
+void PhysUtils::Colors::DrawFrom(const std::vector<TColor*>& colors, const std::string& title) const
+{
     double x1 {0};
     double y1 {0};
     double x2 {10};
@@ -58,7 +97,7 @@ void PhysUtils::Colors::Draw() const
     gPad->Range(x1, y1, x2, y2);
 
     TText text(0, 0, "");
-    text.SetTextFont(61);
+    text.SetTextFont(22);
     text.SetTextSize(0.07);
     text.SetTextAlign(22);
 
@@ -69,15 +108,15 @@ void PhysUtils::Colors::Draw() const
     int col {};
     double hs = 1;
     double ws = 1;
-    for(int i = 0; i < fColors.size(); i++)
+    for(int i = 0; i < colors.size(); i++)
     {
         double xlow = x1 + ws * (row + 0.1);
         double xup = x1 + ws * (row + 0.9);
         double ylow = y1 + hs * (col + 0.1);
         double yup = y1 + hs * (col + 0.9);
         box.SetFillStyle(1001);
-        int color {fColors.at(i)->GetNumber()};
-        box.SetFillColor(fColors.at(i)->GetNumber());
+        int color {colors.at(i)->GetNumber()};
+        box.SetFillColor(colors.at(i)->GetNumber());
         box.DrawBox(xlow, ylow, xup, yup);
         box.SetFillStyle(0);
         box.SetLineColor(1);
@@ -95,4 +134,17 @@ void PhysUtils::Colors::Draw() const
             col++;
         }
     }
+    text.SetTextFont(132);
+    text.DrawTextNDC(0.5, 0.5, title.c_str());
+}
+
+void PhysUtils::Colors::Draw() const
+{
+    auto* c {new TCanvas {"cPhysColors", "PhysUtils::Colors canvas"}};
+    c->DivideSquare(4);
+    // General colors
+    c->cd(1);
+    DrawFrom(fColors, "General");
+    c->cd(2);
+    DrawFrom(fPalettes.at("mpl"), "mpl tab20");
 }
