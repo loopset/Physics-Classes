@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <mutex>
+#include <set>
 #include <stdexcept>
 
 Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DModel& model, double step, int nps)
@@ -95,14 +96,21 @@ void Angular::Intervals::FillPS(int idx, double thetaCM, double Ex, double weigh
     }
 }
 
-void Angular::Intervals::TreatPS(int nsmooth, double scale)
+void Angular::Intervals::TreatPS(int nsmooth, double scale, const std::set<int>& which)
 {
+    int idx {}; // idx of PS
     for(auto& hps : fHsPS)
     {
-        for(int i = 0; i < hps.size(); i++)
+        // Disable treat ps for ps not in set
+        // By default set is empty so run for all
+        if(which.size())
+            if(which.find(idx) == which.end())
+                continue;
+        for(int i = 0; i < hps.size(); i++) // i = interval
         {
             Fitters::TreatPS(fHs[i], hps[i], nsmooth, scale);
         }
+        idx++;
     }
 }
 

@@ -6,6 +6,7 @@
 #include "TH1.h"
 
 #include <mutex>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -40,7 +41,7 @@ public:
     {
         fHsPS[ps][iv]->Add(hf);
     }
-    void TreatPS(int nsmooth = 10, double scale = 0.2);
+    void TreatPS(int nsmooth = 10, double scale = 0.2, const std::set<int>& which = {});
 
     // Getters
     const std::vector<std::pair<double, double>> GetRanges() const { return fRanges; }
