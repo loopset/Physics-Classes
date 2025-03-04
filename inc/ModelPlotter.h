@@ -70,7 +70,8 @@ private:
         // if(!(from.size() <= to.size()))
         //     return;
         for(int i = 0; i < to.size(); i++)
-            to[i] = from[i];
+            if(i < from.size())
+                to[i] = from[i];
     }
 };
 
