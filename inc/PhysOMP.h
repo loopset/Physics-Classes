@@ -91,10 +91,17 @@ class KoningDelaroche : public OMP
 public:
     KoningDelaroche(int Z, int A, double energy);
 };
+
 class CH89 : public OMP
 {
 public:
     CH89(int Z, int A, double energy);
+};
+
+class BecchettiGreenless : public OMP
+{
+public:
+    BecchettiGreenless(int Z, int A, double energy);
 };
 } // namespace PhysOMP
 

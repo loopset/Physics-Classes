@@ -42,6 +42,9 @@ public:
         fHsPS[ps][iv]->Add(hf);
     }
     void TreatPS(int nsmooth = 10, double scale = 0.2, const std::set<int>& which = {});
+    void FitPS(int ps, int iv, const std::string& pol);
+    void FitPS(const std::string& pol);
+    void ReplacePSWithFit();
 
     // Getters
     const std::vector<std::pair<double, double>> GetRanges() const { return fRanges; }

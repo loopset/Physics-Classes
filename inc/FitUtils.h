@@ -15,6 +15,8 @@ namespace Fitters
 {
 void TreatPS(TH1D* hEx, TH1D* hPS, int nsmooth = 10, double scale = 0.2);
 
+void FitPS(TH1D* hPS, const std::string& pol, bool replace = true, bool draw = false);
+
 void DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1D*>& hs, TLegend* leg,
                    const std::unordered_map<std::string, std::string>& labels = {});
 

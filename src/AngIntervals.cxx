@@ -18,6 +18,7 @@
 #include <mutex>
 #include <set>
 #include <stdexcept>
+#include <string>
 
 Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DModel& model, double step, int nps)
 {
@@ -114,6 +115,47 @@ void Angular::Intervals::TreatPS(int nsmooth, double scale, const std::set<int>&
     }
 }
 
+void Angular::Intervals::FitPS(int ps, int iv, const std::string& pol)
+{
+    auto& h {fHsPS[ps][iv]};
+    // Find fitting range
+    auto bmax {h->GetMaximumBin()};
+    auto max {h->GetBinContent(bmax)};
+    auto thresh {0.04};
+    auto blow {h->FindFirstBinAbove(max * thresh)};
+    auto bup {h->FindLastBinAbove(max * thresh)};
+    fHsPS[ps][iv]->Fit(pol.c_str(), "0QM", "", h->GetBinCenter(blow), h->GetBinCenter(bup));
+    // To view fit better
+    fHsPS[ps][iv]->SetLineWidth(2);
+}
+
+void Angular::Intervals::FitPS(const std::string& pol)
+{
+    for(int p = 0; p < fHsPS.size(); p++)
+        for(int i = 0; i < fHsPS[p].size(); i++)
+            FitPS(p, i, pol);
+}
+
+void Angular::Intervals::ReplacePSWithFit()
+{
+    for(int p = 0; p < fHsPS.size(); p++)
+    {
+        for(int i = 0; i < fHsPS[p].size(); i++)
+        {
+            // Get function
+            auto& h {fHsPS[p][i]};
+            TF1* func {};
+            if(h->GetListOfFunctions()->GetSize() == 1)
+            {
+                func = (TF1*)h->GetListOfFunctions()->First()->Clone();
+                h->Reset();
+                h->Add(func);
+                delete func;
+            }
+        }
+    }
+}
+
 TCanvas* Angular::Intervals::Draw(const TString& title) const
 {
     static int cIvsIdx {};
@@ -133,7 +175,7 @@ TCanvas* Angular::Intervals::Draw(const TString& title) const
             hs->Add(fHs[i]);
             for(auto& hps : fHsPS)
             {
-                hps[i]->SetLineStyle(2);
+                hps[i]->SetLineStyle(1);
                 hs->Add(hps[i], "hist");
             }
             hs->Draw("nostack");
@@ -150,6 +192,21 @@ TCanvas* Angular::Intervals::Draw(const TString& title) const
                 f->Draw("same");
                 withFuncs = true;
                 color++;
+            }
+        }
+        for(int p = 0; p < fHsPS.size(); p++)
+        {
+            for(auto* f : *(fHsPS[p][i]->GetListOfFunctions()))
+            {
+                if(color == 10)
+                    color++;
+                if(f)
+                {
+                    ((TF1*)f)->SetLineColor(color);
+                    f->Draw("same");
+                    withFuncs = true;
+                    color++;
+                }
             }
         }
         if(withFuncs)

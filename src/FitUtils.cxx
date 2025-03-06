@@ -3,6 +3,7 @@
 #include "Rtypes.h"
 
 #include "TCanvas.h"
+#include "TF1.h"
 #include "TFile.h"
 #include "TFitResult.h"
 #include "TH1.h"
@@ -30,6 +31,43 @@ void Fitters::TreatPS(TH1D* hEx, TH1D* hPS, int nsmooth, double scale)
     if(intPS == 0 || intEx == 0)
         return;
     hPS->Scale(scale * intEx / intPS);
+}
+
+void Fitters::FitPS(TH1D* hPS, const std::string& pol, bool replace, bool draw)
+{
+    // Find fitting range
+    auto bmax {hPS->GetMaximumBin()};
+    auto max {hPS->GetBinContent(bmax)};
+    auto thresh {0.01};
+    auto blow {hPS->FindFirstBinAbove(max * thresh)};
+    auto bup {hPS->FindLastBinAbove(max * thresh)};
+    hPS->Fit(pol.c_str(), "0QM", "", hPS->GetBinCenter(blow), hPS->GetBinCenter(bup));
+    auto* func {hPS->GetFunction(pol.c_str())};
+    auto* hclone {(TH1D*)hPS->Clone()};
+    if(func)
+    {
+        func->SetLineColor(kMagenta);
+        func->ResetBit(TF1::kNotDraw);
+        // And replace if requested
+        if(replace)
+        {
+            auto* clone {(TF1*)func->Clone()};
+            hPS->Reset();
+            hPS->Add(clone);
+            delete clone;
+        }
+    }
+    // If draw
+    if(draw)
+    {
+        static int counter {0};
+        auto* c {new TCanvas {TString::Format("cFitPS%d", counter), TString::Format("Fit PS %d", counter)}};
+        hclone->SetLineColor(kRed);
+        hclone->DrawClone();
+        hPS->DrawClone("same");
+    }
+    // deletes
+    delete hclone;
 }
 
 void Fitters::DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1D*>& hs, TLegend* leg,

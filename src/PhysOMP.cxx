@@ -297,3 +297,36 @@ PhysOMP::CH89::CH89(int Z, int A, double energy) : OMP(Z, A, energy, 1, 1, "Chap
     frvso = 1.34 - 1.2 * std::pow(fA, -1. / 3);
     favso = 0.63;
 }
+
+PhysOMP::BecchettiGreenless::BecchettiGreenless(int Z, int A, double energy)
+    : OMP(Z, A, energy, 1, 1, "Becchetti-Greenless")
+{
+
+    // Coulomb
+    frc = 1.3;
+    // Coulomb energy correction
+    double Rc {frc * std::pow(fA, 1. / 3)};
+    // double Ec {6 * 1 * fZ * 1.44 / (5 * Rc)};
+
+    // 1-> Volume real (proton only, sign + in paper)
+    double eps {static_cast<double>(fN - fZ) / fA};
+    double gamma {static_cast<double>(fZ) / std::pow(fA, 1. / 3)};
+    fVr = 54. - 0.32 * fEnergy + 0.4 * gamma + 24 * eps;
+    frv = 1.17;
+    fav = 0.75;
+
+    // 2-> Volume imaginary
+    fWv = std::max(0., 0.22 * fEnergy - 2.7);
+    frw = 1.32;
+    faw = 0.51 + 0.7 * eps;
+
+    // 3-> Surface imaginary
+    fWs = std::max(0., 11.8 - 0.25 * fEnergy + 12 * eps);
+    frs = frw;
+    fas = faw;
+
+    // 4-> SO real
+    fVso = 6.2;
+    frvso = 1.01;
+    favso = 0.75;
+}

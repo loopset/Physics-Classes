@@ -66,6 +66,7 @@
 #pragma link C++ class PhysOMP::HT1p;
 #pragma link C++ class PhysOMP::KoningDelaroche;
 #pragma link C++ class PhysOMP::CH89;
+#pragma link C++ class PhysOMP::BecchettiGreenless;
 
 // Shell mode information
 #pragma link C++ class PhysUtils::QuantumNumbers + ;
