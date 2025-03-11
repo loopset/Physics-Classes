@@ -38,7 +38,7 @@ private:
 
 public:
     Comparator() = default;
-    Comparator(const std::string& name, TGraphErrors* exp) : fName(name), fExp((TGraphErrors*)exp->Clone()) {}
+    Comparator(const std::string& name, TGraphErrors* exp);
 
     // Main method to add theoretical models
     void Add(const std::string& name, const std::string& file, int lc = -1, int ls = 1, int lw = 3);

@@ -32,6 +32,12 @@
 #include <unordered_map>
 #include <vector>
 
+Angular::Comparator::Comparator(const std::string& name, TGraphErrors* exp) : fName(name)
+{
+    if(exp)
+        fExp = (TGraphErrors*)exp->Clone();
+}
+
 void Angular::Comparator::Add(const std::string& name, const std::string& file, int lc, int ls, int lw)
 {
     // Read any two column part of a text file
@@ -72,6 +78,8 @@ TGraphErrors* Angular::Comparator::ReadFile(const std::string& file)
 
 TGraphErrors* Angular::Comparator::ProcessTheo(TGraphErrors* theo)
 {
+    if(!fExp)
+        return new TGraphErrors(*theo);
     // INFO: 24/01/2025. Theoretical graph is preprocessed
     //  so as it has the same binning as the experimental
     //  and the bin content is the INTEGRAL in that bin width averaged by its width
@@ -277,11 +285,21 @@ TCanvas* Angular::Comparator::DrawTheo()
         (fName + " models;#theta_{" + (gIsLab ? "Lab" : "CM") + "} [#circ];d#sigma / d#Omega [mb / sr]").c_str());
     // Legend
     auto* leg {BuildLegend()};
+    // Custom color?
+    bool haveCustomColor {false};
     // Add graphs
     for(const auto& name : fKeys)
     {
         auto& g {fTheo[name]};
-        g->SetLineWidth(2);
+        // Set styles!
+        auto [lc, ls, lw] {fStyles[name]};
+        if(lc != -1)
+        {
+            g->SetLineColor(lc);
+            haveCustomColor = true;
+        }
+        g->SetLineStyle(ls);
+        g->SetLineWidth(lw);
         leg->AddEntry(g, name.c_str(), "l");
         mg->Add(g, "c");
     }
@@ -290,7 +308,8 @@ TCanvas* Angular::Comparator::DrawTheo()
     static int cTheoIdx {};
     auto* c {new TCanvas {TString::Format("cTheo%d", cTheoIdx), "Theo models"}};
     cTheoIdx++;
-    mg->Draw("a plc");
+    mg->SetMinimum(1.e-3);
+    mg->Draw((haveCustomColor) ? "a" : "a plc pmc");
     leg->Draw();
     return c;
 }

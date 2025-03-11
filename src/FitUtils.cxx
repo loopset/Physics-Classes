@@ -100,10 +100,11 @@ void Fitters::DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1
     leg->Draw();
 }
 
-void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model, const Fitters::Runner::Init& initial,
-                     const Fitters::Runner::Bounds& bounds, const Fitters::Runner::Fixed& fixed,
-                     const std::string& outfile, const std::string& title,
-                     const std::unordered_map<std::string, std::string>& labels, const Fitters::Runner::Step& steps)
+TFitResult Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
+                           const Fitters::Runner::Init& initial, const Fitters::Runner::Bounds& bounds,
+                           const Fitters::Runner::Fixed& fixed, const std::string& outfile, const std::string& title,
+                           const std::unordered_map<std::string, std::string>& labels,
+                           const Fitters::Runner::Step& steps)
 {
     std::cout << BOLDCYAN << "++++ Global fit " << title << " ++++" << RESET << '\n';
     // Init data
@@ -153,6 +154,7 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
     SaveGlobalFit(outfile, h, gfit, hfits, leg);
     // End :)
     std::cout << BOLDCYAN << "++++++++++++++++++++++++++++++" << RESET << '\n';
+    return res;
 }
 
 std::pair<Fitters::Runner::Init, Fitters::Runner::Init> Fitters::ReadInit(const std::string& name)
