@@ -27,18 +27,23 @@ private:
     // Pointer to Intervals if called through this ctor
     Intervals* fIvs {};
     std::vector<TH1D*> fHistos {};
-    std::vector<Fitters::Data> fData {};
-    std::vector<std::vector<TH1D*>> fHistosPS {};
-    std::vector<Fitters::Model> fModels {};
+    std::vector<Fitters::Data> fData {};          //!
+    std::vector<std::vector<TH1D*>> fHistosPS {}; //!
+    std::vector<Fitters::Model> fModels {};       //!
     std::vector<TFitResult> fRes;
+    // Saving the results of the fits
+    std::vector<double> fResIvs {};
+    std::vector<TGraph*> fResGlobal {};
+    std::vector<std::vector<TH1D*>> fResHistos {};
+    std::vector<std::vector<std::string>> fResNames {};
 
     // Declare integral vectors
-    Counts fIgCounts {};
-    Counts fSumCounts {};
+    Counts fIgCounts {};  //!
+    Counts fSumCounts {}; //!
 
     // Global fit read from file
-    std::vector<std::string> fParNames {};
-    TFitResult fGlobalFit {};
+    std::vector<std::string> fParNames {}; //!
+    TFitResult fGlobalFit {};              //!
 
     // Settings to be sent to fitter
     bool fUseDivisions {true};
@@ -55,6 +60,7 @@ private:
     std::pair<double, double> fManualRange {-1, -1};
 
 public:
+    Fitter() = default;
     Fitter(Intervals* ivs) : fIvs(ivs) {}
 
     // Setters
@@ -73,6 +79,11 @@ public:
     CountsIv GetSumCountsFor(const std::string& peak) const;
     TGraphErrors* GetIgCountsGraph(const std::string& peak) const;
     TGraphErrors* GetSumCountsGraph(const std::string& peak) const;
+    std::vector<double> GetResIvs() const { return fResIvs; }
+    std::vector<TGraph*> GetResGlobal() const { return fResGlobal; }
+    std::vector<std::vector<TH1D*>> GetResHistos() const { return fResHistos; }
+    std::vector<std::vector<std::string>> GetResNames() const { return fResNames; }
+    Intervals* GetIvs() const { return fIvs; }
 
     // Main methods
     void Run();
@@ -81,7 +92,8 @@ public:
     TCanvas* Draw(const TString& title = "");
     TCanvas* DrawCounts(bool both = true, const TString& title = "");
 
-    void Write(const std::string& file) const;
+    void Write(const std::string& file);
+    void Read(const std::string& file);
 
 private:
     void AddData(double exmin, double exmax);
@@ -89,6 +101,7 @@ private:
     void ConfigRunner(Fitters::Runner& runner);
     void DoCounts(unsigned int iv, int nsigma);
     void CountsBySum(const std::string& key, unsigned int iv, int nsigma, TF1* f);
+    void FillResHistos();
 };
 } // namespace Angular
 

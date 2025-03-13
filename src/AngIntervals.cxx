@@ -223,6 +223,8 @@ void Angular::Intervals::Read(const std::string& file)
         throw std::runtime_error("Intervals::Read(): cannot locate key Intervals in file");
     fRanges = intervals->GetRanges();
     fOmegas = intervals->GetOmegas();
+    fHs = intervals->GetHistos();
+    fHsPS = intervals->GetHistosPS();
     delete intervals;
 }
 

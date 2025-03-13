@@ -181,6 +181,34 @@ void Angular::Fitter::Run()
     }
     // Implicitly compute integrals
     ComputeIntegrals();
+    // And fill fitted histograms
+    FillResHistos();
+}
+
+void Angular::Fitter::FillResHistos()
+{
+    fResIvs.clear();
+    fResGlobal.clear();
+    fResHistos.clear();
+    fResNames.clear();
+    for(int i = 0; i < fData.size(); i++)
+    {
+        Fitters::Plotter plot {&fData[i], &fModels[i], &fRes[i]};
+        // Centre
+        if(fIvs)
+            fResIvs.push_back(fIvs->GetCenter(i));
+        // Global fit
+        fResGlobal.push_back(plot.GetGlobalFit());
+        // Histograms
+        auto hfits {plot.GetIndividualHists()};
+        fResHistos.push_back({});
+        fResNames.push_back({});
+        for(const auto& [key, h] : hfits)
+        {
+            fResHistos.back().push_back(h);
+            fResNames.back().push_back(key);
+        }
+    }
 }
 
 TCanvas* Angular::Fitter::Draw(const TString& title)
@@ -188,20 +216,26 @@ TCanvas* Angular::Fitter::Draw(const TString& title)
     static int cFitIdx {};
     auto* c {new TCanvas {TString::Format("cFitter%d", cFitIdx), (title.Length()) ? title : "Angular::Fitter"}};
     cFitIdx++;
-    c->DivideSquare(fData.size());
-    for(int i = 0; i < fData.size(); i++)
+    // Size
+    auto size {fData.size() ? fData.size() : fResIvs.size()};
+    c->DivideSquare(size);
+    for(int i = 0; i < size; i++)
     {
         c->cd(i + 1);
-        Fitters::Plotter plot {&fData[i], &fModels[i], &fRes[i]};
-        auto* gfit {plot.GetGlobalFit()};
-        auto hfits {plot.GetIndividualHists()};
-        // Draw with fitted range
-        fHistos[i]->GetXaxis()->SetRangeUser(fData[i].GetXLow(), fData[i].GetXUp());
+        auto* gfit {fResGlobal[i]};
+        auto& hfits {fResHistos[i]};
+        // Keep drawn ones independent from fResGlobal and fResHistos
+        // Fitters::Plotter plot {&fData[i], &fModels[i], &fRes[i]};
+        // auto* gfit {plot.GetGlobalFit()};
+        // auto hfits {plot.GetIndividualHists()};
+        // Draw with fitted range if Data is available
+        if(i < fData.size())
+            fHistos[i]->GetXaxis()->SetRangeUser(fData[i].GetXLow(), fData[i].GetXUp());
         fHistos[i]->Draw();
         gfit->Draw("same");
         // Create stack
         auto* hs {new THStack};
-        for(auto& [kye, h] : hfits)
+        for(auto& h : hfits)
         {
             h->SetLineWidth(2);
             hs->Add(h);
@@ -416,7 +450,7 @@ TCanvas* Angular::Fitter::DrawCounts(bool both, const TString& title)
     return c;
 }
 
-void Angular::Fitter::Write(const std::string& file) const
+void Angular::Fitter::Write(const std::string& file)
 {
     // Save as TGraphs
     auto* fout {new TFile {file.c_str(), "recreate"}};
@@ -426,5 +460,16 @@ void Angular::Fitter::Write(const std::string& file) const
         g->SetNameTitle(("g" + peak).c_str(), ("Integral counts for " + peak).c_str());
         g->Write();
     }
+
+    // Save this object
+    fout->WriteObject(this, "Fitter");
+
     fout->Close();
+}
+
+void Angular::Fitter::Read(const std::string& file)
+{
+    auto f {std::make_unique<TFile>(file.c_str())};
+    auto fitter {f->Get<Fitter>("Fitter")};
+    *this = *fitter;
 }

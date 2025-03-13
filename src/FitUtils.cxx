@@ -10,13 +10,18 @@
 #include "THStack.h"
 #include "TLegend.h"
 #include "TList.h"
+#include "TRatioPlot.h"
 #include "TString.h"
+#include "TStyle.h"
 
+#include "FitModel.h"
 #include "FitPlotter.h"
 #include "FitRunner.h"
 #include "PhysColors.h"
 
+#include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -74,8 +79,11 @@ void Fitters::DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1
                             const std::unordered_map<std::string, std::string>& labels)
 {
     // Draw in current gPad
-    g->Draw("same");
-    leg->AddEntry(g, "Global fit", "l");
+    if(g)
+    {
+        g->Draw("same");
+        leg->AddEntry(g, "Global fit", "l");
+    }
     auto* stack {new THStack};
     // Set fill styles
     std::vector<int> fills {3345, 3354, 3344};
@@ -100,11 +108,10 @@ void Fitters::DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1
     leg->Draw();
 }
 
-TFitResult Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
-                           const Fitters::Runner::Init& initial, const Fitters::Runner::Bounds& bounds,
-                           const Fitters::Runner::Fixed& fixed, const std::string& outfile, const std::string& title,
-                           const std::unordered_map<std::string, std::string>& labels,
-                           const Fitters::Runner::Step& steps)
+void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model, const Fitters::Runner::Init& initial,
+                     const Fitters::Runner::Bounds& bounds, const Fitters::Runner::Fixed& fixed,
+                     const std::string& outfile, const std::string& title,
+                     const std::unordered_map<std::string, std::string>& labels, bool residuals)
 {
     std::cout << BOLDCYAN << "++++ Global fit " << title << " ++++" << RESET << '\n';
     // Init data
@@ -117,8 +124,6 @@ TFitResult Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& 
     runner.SetInitial(initial);
     runner.SetBounds(bounds);
     runner.SetFixed(fixed);
-    if(fixed.size() > 0)
-        runner.SetStep(steps);
     // Run
     runner.Fit();
     // Save
@@ -136,25 +141,63 @@ TFitResult Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& 
     static int cCount {};
     auto* c {new TCanvas {TString::Format("cGF%d", cCount), title.c_str()}};
     cCount++;
-    // Configure global Ex histogram
-    h->SetTitle("");
-    h->SetStats(false);
-    h->GetXaxis()->SetRangeUser(exmin, exmax);
-    h->SetLineWidth(2);
-    auto* clone = h->DrawClone("e");
     // Create a legend
     auto* leg {new TLegend {0.5, 0.6, 0.9, 0.9}};
-    leg->SetBorderSize(0);
-    leg->SetFillStyle(0);
-    leg->SetTextSize(0.045);
-    leg->AddEntry(clone, "Experimental", "le");
-    // Draw all the other histograms and legend
-    DrawGlobalFit(gfit, hfits, leg, labels);
+    // Draw depending on mode
+    if(!residuals)
+    {
+        // Configure global Ex histogram
+        h->SetTitle("");
+        h->SetStats(false);
+        h->GetXaxis()->SetRangeUser(exmin, exmax);
+        h->SetLineWidth(2);
+        auto* clone = h->DrawClone("e");
+        leg->SetBorderSize(0);
+        leg->SetFillStyle(0);
+        leg->SetTextSize(0.045);
+        leg->AddEntry(clone, "Experimental", "le");
+        // Draw all the other histograms and legend
+        DrawGlobalFit(gfit, hfits, leg, labels);
+    }
+    else
+    {
+        auto* clone {(TH1D*)h->Clone()};
+        clone->SetLineWidth(2);
+        clone->GetXaxis()->SetRangeUser(exmin, exmax);
+        clone->SetStats(false);
+        // Model pointer
+        auto* ptr {new Fitters::Model {}};
+        *ptr = model;
+        // Wrap into TF1
+        auto* tf1 {new TF1 {"fitfunc", [=](double* x, double* p) { return (*ptr)(x, p); }, exmin, exmax,
+                            static_cast<int>(ptr->NPar())}};
+        tf1->SetParameters(res.Parameters().data());
+        tf1->SetNpx(2000);
+        // And append to funtion list
+        clone->GetListOfFunctions()->Clear();
+        clone->GetListOfFunctions()->Add(tf1);
+        // Results pointer just in case...
+        auto* rptr {new TFitResult {res}};
+        // And ratio plot now!
+        auto* ratio {new TRatioPlot {clone, "", rptr}};
+        ratio->SetH1DrawOpt("e");    // visualize errors for histogram
+        ratio->SetGraphDrawOpt("p"); // same for residuals
+        ratio->Draw();
+        ratio->GetLowerRefYaxis()->SetTitle("Residuals");
+        ratio->GetLowerRefYaxis()->SetLabelSize(0.5 * gStyle->GetLabelSize("Y"));
+        // std::cout << "Canvas : " << c << '\n';
+        // std::cout << "up : " << ratio->GetUpperPad() << '\n';
+        // std::cout << "low : " << ratio->GetLowerPad() << '\n';
+        // std::cout << "gPad : " << gPad << '\n';
+        // And draw the other things
+        ratio->GetUpperPad()->cd();
+        DrawGlobalFit(nullptr, hfits, leg, labels);
+        c->cd();
+    }
     // Save to file
     SaveGlobalFit(outfile, h, gfit, hfits, leg);
     // End :)
     std::cout << BOLDCYAN << "++++++++++++++++++++++++++++++" << RESET << '\n';
-    return res;
 }
 
 std::pair<Fitters::Runner::Init, Fitters::Runner::Init> Fitters::ReadInit(const std::string& name)

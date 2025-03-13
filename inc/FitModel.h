@@ -45,6 +45,7 @@ private:
 
 public:
     // Constructor
+    Model() = default;
     Model(int ngaus, int nvoigt, const std::vector<TH1D>& ps = {}, bool withCte = false);
 
     // Derived functions from IBasePars

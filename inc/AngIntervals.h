@@ -17,9 +17,9 @@ class Intervals
 private:
     std::vector<std::pair<double, double>> fRanges {};
     std::vector<double> fOmegas {};
-    std::vector<TH1D*> fHs {};                //!
-    std::vector<std::vector<TH1D*>> fHsPS {}; //!
-    std::mutex fMutex {};                     //! //!< Mutex to ensure thread-safety of Fill function
+    std::vector<TH1D*> fHs {};
+    std::vector<std::vector<TH1D*>> fHsPS {};
+    std::mutex fMutex {}; //! //!< Mutex to ensure thread-safety of Fill function
 
 public:
     Intervals() = default;

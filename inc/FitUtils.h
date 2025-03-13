@@ -1,16 +1,17 @@
 #ifndef FitUtils_h
 #define FitUtils_h
 
-#include "TFitResult.h"
 #include "TGraph.h"
 #include "TH1.h"
 #include "TLegend.h"
+#include "TRatioPlot.h"
 
 #include "FitModel.h"
 #include "FitRunner.h"
 
 #include <string>
 #include <unordered_map>
+
 
 namespace Fitters
 {
@@ -24,11 +25,10 @@ void DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1D*>& hs, 
 void SaveGlobalFit(const std::string& file, TH1D* h, TGraph* g, const std::unordered_map<std::string, TH1D*>& hs,
                    TLegend* leg);
 
-TFitResult RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model, const Fitters::Runner::Init& initial,
-                  const Fitters::Runner::Bounds& bounds, const Fitters::Runner::Fixed& fixed,
-                  const std::string& outfile, const std::string& title = "",
-                  const std::unordered_map<std::string, std::string>& labels = {},
-                  const Fitters::Runner::Step& steps = {});
+void RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model, const Fitters::Runner::Init& initial,
+            const Fitters::Runner::Bounds& bounds, const Fitters::Runner::Fixed& fixed, const std::string& outfile,
+            const std::string& title = "", const std::unordered_map<std::string, std::string>& labels = {},
+            bool residuals = false);
 
 std::pair<Fitters::Runner::Init, Fitters::Runner::Init> ReadInit(const std::string& name);
 
