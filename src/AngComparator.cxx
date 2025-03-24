@@ -190,7 +190,8 @@ TLegend* Angular::Comparator::BuildLegend(double width, double height)
     return l;
 }
 
-TVirtualPad* Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double offset, TVirtualPad* pad)
+TVirtualPad*
+Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double offset, TVirtualPad* pad, bool withChi)
 {
     // Draw all using a TMultiGraph
     fMulti = new TMultiGraph;
@@ -229,6 +230,8 @@ TVirtualPad* Angular::Comparator::Draw(const TString& title, bool logy, bool wit
         TString desc {name};
         if(withSF)
             desc += TString::Format(" #Rightarrow SF = %.2f", fRes[name].Value(0));
+        if(withChi)
+            desc += TString::Format(" #cbar #chi^{2}_{#nu} = %.2f", fRes[name].Chi2() / fRes[name].Ndf());
         leg->AddEntry(g, desc, "l");
         fMulti->Add(g, "c");
     }

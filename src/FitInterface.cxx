@@ -534,6 +534,7 @@ void Fitters::Interface::FitComp()
     auto withSF {GetCompOpt<bool>("withSF").value()};
     auto offset {GetCompOpt<double>("offset").value()};
     auto save {GetCompOpt<bool>("save").value()};
+    auto withChi {GetCompOpt<bool>("withChi")};
 
     // Canvas layout
     // Get number of canvas
@@ -563,7 +564,7 @@ void Fitters::Interface::FitComp()
         auto localLogy {GetCompOpt<bool>("logy", state)};
         auto localOffset {GetCompOpt<int>("offset", state)};
         comp.Draw(state, (localLogy ? localLogy.value() : logy), withSF, (localOffset ? localOffset.value() : offset),
-                  cs[ic]->cd(ip));
+                  cs[ic]->cd(ip), withChi ? withChi.value() : false);
         ip++;
     }
     // And save

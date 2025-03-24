@@ -51,7 +51,7 @@ public:
 
     // Main draw method
     TVirtualPad* Draw(const TString& title = "", bool logy = false, bool withSF = true, double offset = 3,
-                      TVirtualPad* pad = nullptr);
+                      TVirtualPad* pad = nullptr, bool withChi = false);
 
     // Draw theoretical and fits
     TCanvas* DrawTheo();
@@ -82,7 +82,7 @@ private:
     TGraphErrors* ReadFile(const std::string& file);
     TGraphErrors* ProcessTheo(TGraphErrors* theo);
     TGraphErrors* GetFitGraph(TGraphErrors* g, TF1* f);
-    TLegend* BuildLegend(double width = 0.25, double height = 0.2);
+    TLegend* BuildLegend(double width = 0.4, double height = 0.2);
 };
 } // namespace Angular
 
