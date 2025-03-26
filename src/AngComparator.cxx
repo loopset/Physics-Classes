@@ -141,6 +141,9 @@ void Angular::Comparator::Fit(double xmin, double xmax)
     }
     // Set fit range for later
     fFitRange = {xmin, xmax};
+    // Check if exp data is empty; in that case, continue
+    if(!fExp->GetN())
+        return;
     if(!fTheo.size())
         return;
     // Fit is based on a TSpline
@@ -166,6 +169,8 @@ void Angular::Comparator::Fit(double xmin, double xmax)
 
 void Angular::Comparator::Print() const
 {
+    if(!fExp->GetN())
+        return;
     std::cout << BOLDYELLOW << "···· Comparator for " << fName << " ····" << '\n';
     std::cout << "·· Fitted in range [" << fFitRange.first << ", " << fFitRange.second << "] deg" << '\n';
     for(const auto& name : fKeys)
@@ -199,13 +204,16 @@ Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double o
     // Create a legend
     auto* leg {BuildLegend()};
     // 1-> Add experimental
-    fExp->SetMarkerStyle(25);
-    fExp->SetLineWidth(2);
-    leg->AddEntry(fExp, "Exp", "pe");
-    fMulti->Add(fExp, "p");
+    if(fExp->GetN())
+    {
+        fExp->SetMarkerStyle(25);
+        fExp->SetLineWidth(2);
+        leg->AddEntry(fExp, "Exp", "pe");
+        fMulti->Add(fExp, "p");
+    }
     // 2-> Add all fitted
     // In case nothing was fitted, add theoretical lines
-    bool isTheo {fFit.size() == 0};
+    bool isTheo {fFit.size() == 0 || fExp->GetN() == 0};
     bool haveCustomColor {};
     for(const auto& name : fKeys)
     {
@@ -228,10 +236,13 @@ Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double o
         g->SetLineStyle(ls);
         g->SetLineWidth(lw);
         TString desc {name};
-        if(withSF)
-            desc += TString::Format(" #Rightarrow SF = %.2f", fRes[name].Value(0));
-        if(withChi)
-            desc += TString::Format(" #cbar #chi^{2}_{#nu} = %.2f", fRes[name].Chi2() / fRes[name].Ndf());
+        if(fRes.count(name))
+        {
+            if(withSF)
+                desc += TString::Format(" #Rightarrow SF = %.2f", fRes[name].Value(0));
+            if(withChi)
+                desc += TString::Format(" #cbar #chi^{2}_{#nu} = %.2f", fRes[name].Chi2() / fRes[name].Ndf());
+        }
         leg->AddEntry(g, desc, "l");
         fMulti->Add(g, "c");
     }
@@ -252,7 +263,7 @@ Angular::Comparator::Draw(const TString& title, bool logy, bool withSF, double o
         auto xmin {fFitRange.first - offset};
         fMulti->GetXaxis()->SetLimits((xmin < 0) ? 0 : xmin, fFitRange.second + offset);
     }
-    if(isTheo || logy)
+    if((isTheo || logy) && fExp->GetN())
     {
         if(isTheo)
         {
