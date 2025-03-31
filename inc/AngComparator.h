@@ -71,6 +71,7 @@ public:
     double GetuSF(const std::string& model);
     const std::vector<std::string>& GetKeys() const { return fKeys; }
     const std::unordered_map<std::string, TGraphErrors*> GetTheoGraphs() const { return fTheo; }
+    TFitResult& GetTFitRes(const std::string& model) { return fRes.at(model); }
 
     // Save in file(deprecated function as of jan 25)
     void Write(const std::string& file);

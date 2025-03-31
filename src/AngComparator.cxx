@@ -162,7 +162,7 @@ void Angular::Comparator::Fit(double xmin, double xmax)
         fFit[name] = GetFitGraph(gt, func.get());
         fFit[name]->SetTitle(gt->GetTitle());
         // And store results in map
-        fRes[name] = *res.Get();
+        fRes[name] = TFitResult(*res.Get());
     }
     Print();
 }
