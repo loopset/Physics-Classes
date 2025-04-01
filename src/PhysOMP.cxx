@@ -98,7 +98,7 @@ PhysOMP::DA1p::DA1p(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "DA1p
     double Ec {6 * 1 * fZ * 1.44 / (5 * Rc)};
     // Real volume
     fVr = 98.9 - 0.279 * (fEnergy - Ec);
-    frv = 1.11 + (-0.167 + 0.00117 * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
+    frv = 1.11 + (-0.172 + 0.00117 * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
     fav = 0.776;
     // Imaginary volume
     double Wv0 {11.5};
