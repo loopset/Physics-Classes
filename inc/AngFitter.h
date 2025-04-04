@@ -42,8 +42,8 @@ private:
     Counts fSumCounts {}; //!
 
     // Global fit read from file
-    std::vector<std::string> fParNames {}; //!
-    TFitResult fGlobalFit {};              //!
+    std::vector<std::string> fParNames {};
+    TFitResult fGlobalFit {}; //!
 
     // Settings to be sent to fitter
     bool fUseDivisions {true};
@@ -56,6 +56,8 @@ private:
     // Ignore PSs in fit by intervals
     // (it is interesing in some cases)
     bool fIgnorePS {false};
+    // Or fix amplitude to ivs PS by given values
+    std::map<int, std::vector<double>> fPSFixAmps {}; //!
     // Specify a manual range, do not use one used in config file
     std::pair<double, double> fManualRange {-1, -1};
 
@@ -70,6 +72,7 @@ public:
     void SetAllowFreeMean(bool allow) { fAllowFreeMean = allow; }
     void SetFreeMeanRange(double range) { fFreeMeanRange = range; }
     void SetIgnorePS(bool ignore) { fIgnorePS = ignore; }
+    void SetFixAmpPS(int ips, const std::vector<double>& vals) { fPSFixAmps[ips] = vals; }
     void SetManualRange(double min, double max) { fManualRange = {min, max}; };
     void SetAllowFreeSigma(bool allow) { fAllowFreeSigma = allow; }
     void SetFreeSigmaRange(double range) { fFreeSigmaRange = range; }
@@ -79,6 +82,8 @@ public:
     CountsIv GetSumCountsFor(const std::string& peak) const;
     TGraphErrors* GetIgCountsGraph(const std::string& peak) const;
     TGraphErrors* GetSumCountsGraph(const std::string& peak) const;
+    const std::vector<std::string>& GetParNames() const { return fParNames; }
+    const std::vector<TFitResult>& GetTFitResults() const { return fRes; }
     std::vector<double> GetResIvs() const { return fResIvs; }
     std::vector<TGraph*> GetResGlobal() const { return fResGlobal; }
     std::vector<std::vector<TH1D*>> GetResHistos() const { return fResHistos; }
@@ -86,7 +91,7 @@ public:
     Intervals* GetIvs() const { return fIvs; }
 
     // Main methods
-    void Run();
+    void Run(bool print = false);
     void ComputeIntegrals(int nsigma = 2);
 
     TCanvas* Draw(const TString& title = "");
@@ -98,7 +103,7 @@ public:
 private:
     void AddData(double exmin, double exmax);
     void AddModels();
-    void ConfigRunner(Fitters::Runner& runner);
+    void ConfigRunner(int iv, Fitters::Runner& runner);
     void DoCounts(unsigned int iv, int nsigma);
     void CountsBySum(const std::string& key, unsigned int iv, int nsigma, TF1* f);
     void FillResHistos();

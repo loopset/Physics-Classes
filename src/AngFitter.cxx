@@ -10,6 +10,7 @@
 #include "TLegend.h"
 #include "TMath.h"
 #include "TMultiGraph.h"
+#include "TRegexp.h"
 #include "TString.h"
 
 #include "Math/IntegratorOptions.h"
@@ -126,7 +127,7 @@ void Angular::Fitter::Configure(const std::string& file)
     AddModels();
 }
 
-void Angular::Fitter::ConfigRunner(Fitters::Runner& runner)
+void Angular::Fitter::ConfigRunner(int iv, Fitters::Runner& runner)
 {
     // Fitter
     auto& f {runner.GetFitter()};
@@ -159,12 +160,33 @@ void Angular::Fitter::ConfigRunner(Fitters::Runner& runner)
         if(fAllowFreeSigma && str.Contains("_Sigma"))
         {
             f.Config().ParSettings(p).Release();
-            f.Config().ParSettings(p).SetLimits(value - fFreeSigmaRange, value + fFreeSigmaRange);
+            f.Config().ParSettings(p).SetLimits(TMath::Max(0., value - fFreeSigmaRange), value + fFreeSigmaRange);
+        }
+        // If requested, fix amplitude for PS in this interval
+        if(str.Contains("ps") && str.Contains("_Amp"))
+        {
+            // Index of ps
+            auto it {str.Index("_")};
+            auto name {str(0, it)};
+            int ips {std::stoi(TString(name)(TRegexp("[0-9]+")))};
+            // Check if that PS has given amplitudes
+            if(fPSFixAmps.count(ips))
+            {
+                double fixVal {1};
+                // And then if we have amplitude for that interval
+                // if not, fallback to 1
+                if(fPSFixAmps[ips].size() > iv)
+                    fixVal = fPSFixAmps[ips][iv];
+                f.Config().ParSettings(p).SetValue(fixVal);
+                f.Config().ParSettings(p).Fix();
+                std::cout << BOLDGREEN << "Fitter::ConfigRunner: fixing " << str << " in iv " << iv << " at " << fixVal
+                          << RESET << '\n';
+            }
         }
     }
 }
 
-void Angular::Fitter::Run()
+void Angular::Fitter::Run(bool print)
 {
     for(int i = 0; i < fData.size(); i++)
     {
@@ -174,9 +196,9 @@ void Angular::Fitter::Run()
         runner.GetObjective().SetUseDivisions(fUseDivisions);
         runner.GetObjective().SetUseIntegral(fUseIntegral);
         // Config it
-        ConfigRunner(runner);
+        ConfigRunner(i, runner);
         // Fit!
-        runner.Fit(false);
+        runner.Fit(print);
         fRes.push_back(runner.GetFitResult());
     }
     // Implicitly compute integrals

@@ -22,8 +22,6 @@
 
 Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DModel& model, double step, int nps)
 {
-    // Avoid adding to gROOT list of objects
-    TH1::AddDirectory(false);
     if(step < 0)
         fRanges.push_back({xmin, xmax});
     else
