@@ -20,8 +20,9 @@ namespace Angular
 class Fitter
 {
 public:
-    typedef std::vector<double> CountsIv;
-    typedef std::unordered_map<std::string, CountsIv> Counts;
+    using CountsIv = std::vector<double>;
+    using Counts = std::unordered_map<std::string, CountsIv>;
+    using WhichFree = std::vector<std::string>;
 
 private:
     // Pointer to Intervals if called through this ctor
@@ -50,9 +51,12 @@ private:
     bool fUseIntegral {};
     // Allow variation of mean of gaussians during interval fit
     bool fAllowFreeMean {};
-    double fFreeMeanRange {0.5}; // MeV
+    double fFreeMeanRange {0.5};                // MeV
+    std::vector<std::string> fWhichFreeMean {}; // For which states apply a free mean. If empty, for all!
+    // Allow free sigma
     bool fAllowFreeSigma {};
     double fFreeSigmaRange {0.25}; // MeV
+    WhichFree fWhichFreeSigma {};  // For which states apply free sigma. If empty, for all!
     // Ignore PSs in fit by intervals
     // (it is interesing in some cases)
     bool fIgnorePS {false};
@@ -69,13 +73,25 @@ public:
     void Configure(const std::string& file);
     void SetUseDivisions(bool use) { fUseDivisions = use; }
     void SetUseIntegral(bool use) { fUseIntegral = use; }
-    void SetAllowFreeMean(bool allow) { fAllowFreeMean = allow; }
+    // Free mean settings
+    void SetAllowFreeMean(bool allow, const WhichFree& which = {})
+    {
+        fAllowFreeMean = allow;
+        fWhichFreeMean = which;
+    }
     void SetFreeMeanRange(double range) { fFreeMeanRange = range; }
+    // Free sigma settings
+    void SetAllowFreeSigma(bool allow, const WhichFree& which = {})
+    {
+        fAllowFreeSigma = allow;
+        fWhichFreeSigma = which;
+    }
+    void SetFreeSigmaRange(double range) { fFreeSigmaRange = range; }
+    // PS settings
     void SetIgnorePS(bool ignore) { fIgnorePS = ignore; }
     void SetFixAmpPS(int ips, const std::vector<double>& vals) { fPSFixAmps[ips] = vals; }
+    // Specify a manual fitting range different than for the global fit
     void SetManualRange(double min, double max) { fManualRange = {min, max}; };
-    void SetAllowFreeSigma(bool allow) { fAllowFreeSigma = allow; }
-    void SetFreeSigmaRange(double range) { fFreeSigmaRange = range; }
 
     // Getters
     CountsIv GetIgCountsFor(const std::string& peak) const;

@@ -22,6 +22,7 @@
 #include "FitRunner.h"
 #include "PhysColors.h"
 
+#include <algorithm>
 #include <cmath>
 #include <ios>
 #include <iostream>
@@ -136,8 +137,17 @@ void Angular::Fitter::ConfigRunner(int iv, Fitters::Runner& runner)
     for(unsigned int p = 0; p < npars; p++)
     {
         TString str {fParNames[p]};
+
         // 1-> Set parameter name
         f.Config().ParSettings(p).SetName(str.Data());
+        // Extract information
+        auto sep {str.Index("_")};     // Example below for "g1_Mean" input str
+        TString funcIdx {str(0, sep)}; // g1
+        auto num {funcIdx.First("0123456789")};
+        TString nameFunc {funcIdx(0, num)};                           // g
+        int idxFunc {TString(funcIdx(num, funcIdx.Length())).Atoi()}; // 1
+        TString namePar {str(sep + 1, str.Length())};                 // Mean
+
         // 2-> Initial value
         auto value {fGlobalFit.Value(p)};
         f.Config().ParSettings(p).SetValue(value);
@@ -147,36 +157,44 @@ void Angular::Fitter::ConfigRunner(int iv, Fitters::Runner& runner)
         fGlobalFit.ParameterBounds(p, min, max);
         if(str.Contains("_Amp")) // only set bounds for amp
             f.Config().ParSettings(p).SetLimits(min, max);
+
         // 4-> Fix parameters
         if(!(str.Contains("_Amp")))
             f.Config().ParSettings(p).Fix();
+
         // If requested, allow a slight variation in mean
         if(fAllowFreeMean && str.Contains("_Mean"))
         {
+            // If specified particular states for which allow free mean, apply only to those!
+            if(fWhichFreeMean.size() &&
+               std::find(fWhichFreeMean.begin(), fWhichFreeMean.end(), funcIdx) == fWhichFreeMean.end())
+                continue;
             f.Config().ParSettings(p).Release();
             f.Config().ParSettings(p).SetLimits(value - fFreeMeanRange, value + fFreeMeanRange);
         }
+
         // If requested, allow a slight variation in sigma
         if(fAllowFreeSigma && str.Contains("_Sigma"))
         {
+            // If specified free sigma per state, only for those!
+            if(fWhichFreeSigma.size() &&
+               std::find(fWhichFreeSigma.begin(), fWhichFreeSigma.end(), funcIdx) == fWhichFreeSigma.end())
+                continue;
             f.Config().ParSettings(p).Release();
-            f.Config().ParSettings(p).SetLimits(TMath::Max(0., value - fFreeSigmaRange), value + fFreeSigmaRange);
+            f.Config().ParSettings(p).SetLimits(TMath::Max(0.1, value - fFreeSigmaRange), value + fFreeSigmaRange);
         }
+
         // If requested, fix amplitude for PS in this interval
         if(str.Contains("ps") && str.Contains("_Amp"))
         {
-            // Index of ps
-            auto it {str.Index("_")};
-            auto name {str(0, it)};
-            int ips {std::stoi(TString(name)(TRegexp("[0-9]+")))};
             // Check if that PS has given amplitudes
-            if(fPSFixAmps.count(ips))
+            if(fPSFixAmps.count(idxFunc))
             {
                 double fixVal {1};
                 // And then if we have amplitude for that interval
                 // if not, fallback to 1
-                if(fPSFixAmps[ips].size() > iv)
-                    fixVal = fPSFixAmps[ips][iv];
+                if(fPSFixAmps[idxFunc].size() > iv)
+                    fixVal = fPSFixAmps[idxFunc][iv];
                 f.Config().ParSettings(p).SetValue(fixVal);
                 f.Config().ParSettings(p).Fix();
                 std::cout << BOLDGREEN << "Fitter::ConfigRunner: fixing " << str << " in iv " << iv << " at " << fixVal
