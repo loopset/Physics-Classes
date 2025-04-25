@@ -59,6 +59,10 @@ public:
     double GetMax() const { return fRanges.back().second; }
     int GetSize() const { return fRanges.size(); }
 
+    // Setters
+    void SetRanges(const std::vector<std::pair<double, double>>& ranges) { fRanges = ranges; }
+    void SetOmegas(const std::vector<double>& omegas) { fOmegas = omegas; }
+
     // Others
     TCanvas* Draw(const TString& title = "") const;
     void Read(const std::string& file);
