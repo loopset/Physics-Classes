@@ -538,9 +538,9 @@ void Fitters::Interface::FitComp()
 
     // Canvas layout
     // Get number of canvas
-    auto size {(int)fKeys.size()};
+    auto size {(int)fComparators.size()};
     int npads {size <= 4 ? size : 4}; // pads per canvas
-    auto ncanv {static_cast<int>(std::ceil((double)fKeys.size() / npads))};
+    auto ncanv {static_cast<int>(std::ceil((double)fComparators.size() / npads))};
     std::vector<TCanvas*> cs;
     for(int c = 0; c < ncanv; c++)
     {
@@ -594,7 +594,8 @@ void Fitters::Interface::WriteComp(const std::string& file)
     auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
     // For each comparator, write!
     for(const auto& key : fKeys)
-        fComparators[key].Write(key, ""); // file not specified: save in current one
+        if(fComparators.count(key))
+            fComparators[key].Write(key, ""); // file not specified: save in current one
     // Save also list of keys
     f->WriteObject(&fKeys, "Keys");
 }
