@@ -57,6 +57,10 @@ private:
     bool fAllowFreeSigma {};
     double fFreeSigmaRange {0.25}; // MeV
     WhichFree fWhichFreeSigma {};  // For which states apply free sigma. If empty, for all!
+    // Allow free gamma
+    bool fAllowFreeGamma {};
+    double fFreeGammaRange {0.4}; // MeV
+    WhichFree fWhichFreeGamma {};
     // Ignore PSs in fit by intervals
     // (it is interesing in some cases)
     bool fIgnorePS {false};
@@ -87,6 +91,13 @@ public:
         fWhichFreeSigma = which;
     }
     void SetFreeSigmaRange(double range) { fFreeSigmaRange = range; }
+    // Gamma settings
+    void SetAllowFreeGamma(bool allow, const WhichFree& which = {})
+    {
+        fAllowFreeGamma = allow;
+        fWhichFreeGamma = which;
+    }
+    void SetGreeGammaRange(double range) { fFreeGammaRange = range; }
     // PS settings
     void SetIgnorePS(bool ignore) { fIgnorePS = ignore; }
     void SetFixAmpPS(int ips, const std::vector<double>& vals) { fPSFixAmps[ips] = vals; }

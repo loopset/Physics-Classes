@@ -183,6 +183,16 @@ void Angular::Fitter::ConfigRunner(int iv, Fitters::Runner& runner)
             f.Config().ParSettings(p).Release();
             f.Config().ParSettings(p).SetLimits(TMath::Max(0.1, value - fFreeSigmaRange), value + fFreeSigmaRange);
         }
+        // If requested, allow a slight variation in gamma
+        if(fAllowFreeGamma && str.Contains("_Lg"))
+        {
+            // If specified free sigma per state, only for those!
+            if(fWhichFreeGamma.size() &&
+               std::find(fWhichFreeGamma.begin(), fWhichFreeGamma.end(), funcIdx) == fWhichFreeGamma.end())
+                continue;
+            f.Config().ParSettings(p).Release();
+            f.Config().ParSettings(p).SetLimits(TMath::Max(0., value - fFreeGammaRange), value + fFreeGammaRange);
+        }
 
         // If requested, fix amplitude for PS in this interval
         if(str.Contains("ps") && str.Contains("_Amp"))
