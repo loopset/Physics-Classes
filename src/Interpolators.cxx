@@ -7,18 +7,25 @@
 #include "TGraph.h"
 #include "TGraphAsymmErrors.h"
 #include "TGraphErrors.h"
+#include "TH1.h"
 #include "TLegend.h"
 #include "TMath.h"
 #include "TMultiGraph.h"
 #include "TString.h"
 #include "TVirtualPad.h"
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
 
 void Interpolators::Efficiency::AddGraph(const std::string& peak, TEfficiency* eff)
 {
+    if(fGraph[peak])
+    {
+        delete fGraph[peak];
+        fGraph[peak] = nullptr;
+    }
     fGraph[peak] = eff->CreateGraph();
     fGraph[peak]->SetName(peak.c_str());
     fGraph[peak]->SetBit(TGraph::kIsSortedX); // mark X to be already sorted
@@ -51,6 +58,11 @@ void Interpolators::Efficiency::Add(const std::string& peak, TEfficiency* eff)
     str.ToLower();
     if(str.Contains("lab"))
         fIsLab = true;
+    if(fEff[peak])
+    {
+        delete fEff[peak];
+        fEff[peak] = nullptr;
+    }
     fEff[peak] = eff;
     fEff[peak]->SetNameTitle(peak.c_str(), peak.c_str());
     AddGraph(peak, eff);
@@ -73,6 +85,28 @@ double Interpolators::Efficiency::GetPointUEff(const std::string& peak, double t
     auto bin {eff->FindFixBin(thetaCM)};
     // Error as mean of low and up (must be equal in principle)
     return (eff->GetEfficiencyErrorLow(bin) + eff->GetEfficiencyErrorUp(bin)) / 2;
+}
+
+void Interpolators::Efficiency::Scale(double factor)
+{
+    for(auto& [key, eff] : fEff)
+    {
+        auto* hAll {eff->GetTotalHistogram()};
+        auto* hPassed {eff->GetPassedHistogram()};
+        auto* hScaled {(TH1D*)hPassed->Clone()};
+        hScaled->Reset();
+        for(int b = 1; b <= hScaled->GetNbinsX(); b++)
+        {
+            auto counts {hPassed->GetBinContent(b)};
+            counts *= factor;
+            hScaled->SetBinContent(b, int(counts));
+        }
+        auto* neweff {new TEfficiency {*hScaled, *hAll}};
+        // Delete auxiliaries
+        delete hScaled;
+        // Add (this automatically overrides TGraph)
+        Add(key, neweff);
+    }
 }
 
 std::pair<double, double> Interpolators::Efficiency::GetXaxisRange(TMultiGraph* mg)

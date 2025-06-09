@@ -40,6 +40,7 @@ public:
     void SetMeanDiv(int div) { fMeanDiv = div; }
 
     // Others
+    void Scale(double factor);
     TVirtualPad* Draw(bool multigraph = true, const TString& title = "", TVirtualPad* par = nullptr);
 
     void SaveAs(const std::string& file);
