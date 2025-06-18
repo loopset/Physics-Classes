@@ -28,7 +28,7 @@ void SaveGlobalFit(const std::string& file, TH1D* h, TGraph* g, const std::unord
 void RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model, const Fitters::Runner::Init& initial,
             const Fitters::Runner::Bounds& bounds, const Fitters::Runner::Fixed& fixed, const std::string& outfile,
             const std::string& title = "", const std::unordered_map<std::string, std::string>& labels = {},
-            bool residuals = false);
+            bool residuals = false, bool minos = false);
 
 std::pair<Fitters::Runner::Init, Fitters::Runner::Init> ReadInit(const std::string& name);
 

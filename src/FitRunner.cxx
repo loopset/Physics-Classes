@@ -73,7 +73,7 @@ void Fitters::Runner::SetStep(const Step& step)
     }
 }
 
-bool Fitters::Runner::Fit(bool print)
+bool Fitters::Runner::Fit(bool print, bool minos)
 {
     // Print settings
     if(print)
@@ -84,6 +84,8 @@ bool Fitters::Runner::Fit(bool print)
     }
     // Perform fit
     auto ret {fFitter.FitFCN()};
+    if(minos)
+        fFitter.CalculateMinosErrors();
     // Print
     if(print)
         fFitter.Result().Print(std::cout);
