@@ -166,8 +166,7 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
         clone->GetXaxis()->SetRangeUser(exmin, exmax);
         clone->SetStats(false);
         // Model pointer
-        auto* ptr {new Fitters::Model {}};
-        *ptr = model;
+        auto* ptr {model.Clone()};
         // Wrap into TF1
         auto* tf1 {new TF1 {"fitfunc", [=](double* x, double* p) { return (*ptr)(x, p); }, exmin, exmax,
                             static_cast<int>(ptr->NPar())}};

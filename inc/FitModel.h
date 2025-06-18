@@ -65,6 +65,7 @@ public:
     {
         auto ret {new Model {fNGauss, fNVoigt, fPS, fCte}};
         ret->SetParameters(Parameters());
+        ret->SetUseSpline(fUseSpline);
         return ret;
     };
     bool HasGradient() const override { return false; }
