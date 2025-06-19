@@ -226,7 +226,7 @@ void Angular::Fitter::Run(bool print)
         // Config it
         ConfigRunner(i, runner);
         // Fit!
-        runner.Fit(print);
+        runner.Fit(print, Angular::GetUseHessErrors());
         fRes.push_back(runner.GetFitResult());
     }
     // Implicitly compute integrals

@@ -110,7 +110,7 @@ void Fitters::DrawGlobalFit(TGraph* g, const std::unordered_map<std::string, TH1
 void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model, const Fitters::Runner::Init& initial,
                      const Fitters::Runner::Bounds& bounds, const Fitters::Runner::Fixed& fixed,
                      const std::string& outfile, const std::string& title,
-                     const std::unordered_map<std::string, std::string>& labels, bool residuals, bool minos)
+                     const std::unordered_map<std::string, std::string>& labels, bool residuals, bool hesse, bool minos)
 {
     std::cout << BOLDCYAN << "++++ Global fit " << title << " ++++" << RESET << '\n';
     // Init data
@@ -124,7 +124,7 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
     runner.SetBounds(bounds);
     runner.SetFixed(fixed);
     // Run
-    runner.Fit(true, minos);
+    runner.Fit(true, hesse, minos);
     // Save
     runner.Write(outfile);
 

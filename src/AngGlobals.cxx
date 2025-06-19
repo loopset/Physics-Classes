@@ -11,3 +11,15 @@ bool Angular::GetIsLab()
 {
     return gIsLab;
 }
+
+bool Angular::gUseHessErrors = false;
+
+void Angular::ToggleHessErrors()
+{
+    gUseHessErrors = !gUseHessErrors;
+}
+
+bool Angular::GetUseHessErrors()
+{
+    return gUseHessErrors;
+}

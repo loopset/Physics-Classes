@@ -73,7 +73,7 @@ void Fitters::Runner::SetStep(const Step& step)
     }
 }
 
-bool Fitters::Runner::Fit(bool print, bool minos)
+bool Fitters::Runner::Fit(bool print, bool hesse, bool minos)
 {
     // Print settings
     if(print)
@@ -84,6 +84,12 @@ bool Fitters::Runner::Fit(bool print, bool minos)
     }
     // Perform fit
     auto ret {fFitter.FitFCN()};
+    if(hesse)
+    {
+        if(print)
+            std::cout << "Fitters::Runner::Fit(): using Hessian errors instead of MIGRAD approximative ones" << '\n';
+        fFitter.CalculateHessErrors();
+    }
     if(minos)
         fFitter.CalculateMinosErrors();
     // Print
