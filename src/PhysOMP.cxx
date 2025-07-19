@@ -42,7 +42,7 @@ PhysOMP::Daehnick::Daehnick(int Z, int A, double energy) : OMP(Z, A, energy, 1, 
     double beta {-std::pow(fEnergy / 100, 2)};
     auto mu {[](double N)
              {
-                 double ret;
+                 double ret {};
                  for(const auto& m : {8, 20, 28, 50, 82, 126})
                      ret += std::exp(-1 * std::pow((m - N) / 2, 2));
                  return ret;
