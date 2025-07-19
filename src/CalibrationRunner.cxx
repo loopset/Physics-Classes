@@ -46,6 +46,11 @@ void Calibration::Runner::FindPedestal()
     // Pedestal is the maximum in the histogram
     // from [0, fRange.first]
     auto [mean, amp] {GetAmpMeanInRange(fData, 0, fRange.first)};
+    if(fDebug)
+    {
+        std::cout << "-> Pedestal:" << '\n';
+        std::cout << "  Guessed amp : " << amp << " and mean : " << mean << '\n';
+    }
     // Temporaly set range properly
     fData->GetXaxis()->SetRangeUser(0, fRange.first);
     // Fit to gaussian
@@ -58,7 +63,8 @@ void Calibration::Runner::FindPedestal()
 std::pair<double, double> Calibration::Runner::GetPedestal()
 {
     auto& f {fPedestals["ped"]};
-    return {f->GetParameter(1), f->GetParameter(2)};
+    auto mean {f->GetParameter(1)};
+    return {(mean < 0) ? 0 : mean, f->GetParameter(2)};
 }
 
 std::vector<std::pair<double, double>> Calibration::Runner::FilterPeaks(const TSpectrum& spe)
@@ -304,7 +310,7 @@ void Calibration::Runner::DoFinalPlots()
         // Set some limits on parameters to avoid wrong fits
         fGaussFinal[name]->SetParLimits(0, 0, 1e8);   // amp
         fGaussFinal[name]->SetParLimits(1, min, max); // mean
-        fGaussFinal[name]->SetParLimits(2, 0.005, 5); // sigma c [0, 5] MeV
+        fGaussFinal[name]->SetParLimits(2, 0.005, 2); // sigma c [0, 2] MeV
         // And now initial parameters!
         auto [mean, amp] {GetAmpMeanInRange(fHistFinal.get(), min, max)};
         fGaussFinal[name]->SetParameters(amp, mean, sigmas[s].back());
