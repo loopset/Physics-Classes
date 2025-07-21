@@ -66,6 +66,9 @@ private:
     // Histograms
     std::string fFitOpts {"0QRM+"};
     std::string fFitOptsDebug {"0RM+"};
+    // Fitting ranges
+    double fMinSigma {0.005};
+    double fMaxSigma {2}; // MeV
 
 public:
     Runner(Source* source, TH1D* data, TH1D* originalData = nullptr, bool debug = false)
@@ -84,6 +87,8 @@ public:
         ApplyRange();
     }
     void SetGaussPreWidth(double w) { fPreGaussWidth = w; }
+    void SertMinSigma(double sigma) { fMinSigma = sigma; }
+    void SetMaxSigma(double sigma) { fMaxSigma = sigma; }
 
     void DisableXErrors() { fDisableXErrors = true; }
 
