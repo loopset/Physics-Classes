@@ -120,6 +120,7 @@ public:
     std::pair<double, double> GetPedestal();
     std::shared_ptr<TH1D> GetHistFinal() const { return fHistFinal; }
     inline void DrawSatFinal() const { DrawSat(fFinalSat); }
+    const SatelliteCont& GetFinalSat() const { return fFinalSat; }
 
 private:
     void ApplyRange();
