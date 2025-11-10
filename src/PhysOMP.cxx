@@ -299,7 +299,7 @@ PhysOMP::CH89::CH89(int Z, int A, double energy) : OMP(Z, A, energy, 1, 1, "Chap
     double Vso0 {5.9};
     double Vsoe {0};
     double VsoA {0};
-    fVso = Vso0 + Vsoe * fEnergy + VsoA * std::pow(fA, -1. / 3) * 2; // WARNING: l.sigma in paper
+    fVso = (Vso0 + Vsoe * fEnergy + VsoA * std::pow(fA, -1. / 3)) * 2; // WARNING: l.sigma in paper
     frvso = 1.34 - 1.2 * std::pow(fA, -1. / 3);
     favso = 0.63;
 }
