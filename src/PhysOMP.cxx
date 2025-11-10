@@ -7,6 +7,10 @@
 
 void PhysOMP::OMP::Print() const
 {
+    // INFO: 10/11/2025. In the SO part, all definitions have been taken as products of L.S
+    // In some papers (mainly for A=1,3 potentials), they use L.sigma, where sigma = 2S.
+    // In that case, Vso in the paper have been multiplied x2 to change to LS representation.
+    // If using Fresco or 2Fnr, continue using the corresponding cout
     std::cout << BOLDYELLOW << "····· " << fName << " ·····" << '\n';
     std::cout << "   For target (A, Z) : (" << fA << ", " << fZ << ")" << '\n';
     std::cout << "   and projectile (A, Z) : (" << fTargetA << ", " << fTargetZ << ") @ " << fEnergy << " MeV" << '\n';
@@ -24,9 +28,11 @@ void PhysOMP::OMP::Print() const
     std::cout << "   Ws : " << fWs << '\n';
     std::cout << "   rs : " << frs << '\n';
     std::cout << "   as : " << fas << '\n';
+    std::cout << BOLDRED << "   SO as L·S product" << BOLDYELLOW << '\n';
     std::cout << "-> Real spin-orbit : " << '\n';
     std::cout << "   Vso : " << fVso << '\n';
-    std::cout << "   FRESCO Vso / 2 : " << fVso / 2 << '\n';
+    std::cout << "   FRESCO or TWOFNR : " << '\n';
+    std::cout << "   Vso / 2 : " << fVso / 2 << '\n';
     std::cout << "   rso : " << frvso << '\n';
     std::cout << "   aso : " << favso << '\n';
     std::cout << "-> Imaginary spin-orbit : " << '\n';
@@ -84,7 +90,7 @@ PhysOMP::Haixia::Haixia(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "
     frs = 1.334 + 0.152 * std::pow(fA, -1. / 3);
     fas = 0.531 + 0.062 * std::pow(fA, 1. / 3);
     // Real spin-orbit
-    fVso = 3.557;
+    fVso = 3.557 * 2; // WARNING: L.sigma in paper
     frvso = 0.972;
     favso = 1.011;
 }
@@ -243,12 +249,12 @@ PhysOMP::KoningDelaroche::KoningDelaroche(int Z, int A, double energy) : OMP(Z, 
     fas = 0.5187 + 5.205e-4 * fA;
 
     // 4-> SO real
-    fVso = vso1 * std::exp(-vso2 * fEnergy);
+    fVso = vso1 * std::exp(-vso2 * fEnergy) * 2; // WARNING: l.sigma in paper
     frvso = 1.1854 - 0.647 * std::pow(fA, -1. / 3);
     favso = 0.59;
 
     // 5-> SO imaginary
-    fWso = wso1 * std::pow(fEnergy, 2) / (std::pow(fEnergy, 2) + std::pow(wso2, 2));
+    fWso = wso1 * std::pow(fEnergy, 2) / (std::pow(fEnergy, 2) + std::pow(wso2, 2)); // WARNING: l.sigma in paper
     frwso = frvso;
     fawso = favso;
 }
@@ -293,7 +299,7 @@ PhysOMP::CH89::CH89(int Z, int A, double energy) : OMP(Z, A, energy, 1, 1, "Chap
     double Vso0 {5.9};
     double Vsoe {0};
     double VsoA {0};
-    fVso = Vso0 + Vsoe * fEnergy + VsoA * std::pow(fA, -1. / 3);
+    fVso = Vso0 + Vsoe * fEnergy + VsoA * std::pow(fA, -1. / 3) * 2; // WARNING: l.sigma in paper
     frvso = 1.34 - 1.2 * std::pow(fA, -1. / 3);
     favso = 0.63;
 }
@@ -326,7 +332,7 @@ PhysOMP::BecchettiGreenless::BecchettiGreenless(int Z, int A, double energy)
     fas = faw;
 
     // 4-> SO real
-    fVso = 6.2;
+    fVso = 6.2 * 2; // WARNING: l.sigma in paper
     frvso = 1.01;
     favso = 0.75;
 }
