@@ -254,7 +254,7 @@ PhysOMP::KoningDelaroche::KoningDelaroche(int Z, int A, double energy) : OMP(Z, 
     favso = 0.59;
 
     // 5-> SO imaginary
-    fWso = wso1 * std::pow(fEnergy, 2) / (std::pow(fEnergy, 2) + std::pow(wso2, 2)); // WARNING: l.sigma in paper
+    fWso = wso1 * std::pow(fEnergy, 2) / (std::pow(fEnergy, 2) + std::pow(wso2, 2)) * 2; // WARNING: l.sigma in paper
     frwso = frvso;
     fawso = favso;
 }
