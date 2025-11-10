@@ -222,7 +222,7 @@ PhysOMP::KoningDelaroche::KoningDelaroche(int Z, int A, double energy) : OMP(Z, 
     double w1p {14.667 + 0.009629 * fA};
     double w2p {73.55 + 0.0795 * fA};
 
-    double d1p {16 - 16 * static_cast<double>(fN - fZ) / fA};
+    double d1p {16. + 16 * static_cast<double>(fN - fZ) / fA};
     double d2p {0.018 + 0.003802 / (1 + std::exp(static_cast<double>(fA - 156.) / 8))};
     double d3p {11.5};
 
