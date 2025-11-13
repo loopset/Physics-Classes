@@ -30,6 +30,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 Angular::Comparator::Comparator(const std::string& name, TGraphErrors* exp) : fName(name)
@@ -510,4 +511,84 @@ void Angular::Comparator::Write(const std::string& key, const std::string& file)
         f->Close();
         delete f;
     }
+}
+
+std::pair<double, double> Angular::Comparator::IntegralExp()
+{
+    // MC model just in case... but not needed
+    // Sum of i.i.d gaussian variables is gaussian
+    // and so are our uncertainties
+    // std::vector<double> ints;
+    // for(int i = 0; i < 10000; i++)
+    // {
+    //     TGraphErrors git {};
+    //     for(int p = 0; p < fExp->GetN(); p++)
+    //     {
+    //         auto x {fExp->GetPointX(p)};
+    //         auto y {fExp->GetPointY(p)};
+    //         auto uy {fExp->GetErrorY(p)};
+    //         git.AddPoint(x, gRandom->Gaus(y, uy));
+    //     }
+    //     ints.push_back(DoIntegral(&git));
+    // }
+    // auto mean {TMath::Mean(ints.begin(), ints.end())};
+    // auto stddev {TMath::StdDev(ints.begin(), ints.end())};
+    // std::cout << "MC mean : " << mean << '\n';
+    // std::cout << "MC std : " << stddev << '\n';
+    return DoIntegral(fExp);
+}
+
+double Angular::Comparator::IntegralModel(const std::string& model)
+{
+    if(fTheo.count(model))
+    {
+        // Calculate integration limits based on exp data
+        double xmin {-11};
+        double xmax {-11};
+        if(fExp)
+        {
+            auto bw {fExp->GetPointX(1) - fExp->GetPointX(0)};
+            bw /= 2;
+            xmin = fExp->GetPointX(0) - bw;
+            xmax = fExp->GetPointX(fExp->GetN() - 1) + bw;
+        }
+        return DoIntegral(fTheo[model], xmin, xmax).first;
+    }
+    else
+        return -11.;
+}
+
+std::pair<double, double> Angular::Comparator::DoIntegral(TGraphErrors* g, double xmin, double xmax)
+{
+    // Get bin width
+    double bw {1}; // degree
+    if(g->GetN() > 1)
+        bw = g->GetX()[1] - g->GetX()[0];
+    // Integrate by sum of points, including the element of solid angle dOmega = sinTheta dTheta dPhi
+    // But since we have discrete points with constant binning, = 2Pi * BinWidth * Sum(y_i sinTheta_i)
+    // We assume that X points are BIN CENTRES
+    double integral {};
+    double uncertainty {};
+    for(int p = 0; p < g->GetN(); p++)
+    {
+        auto thetacm {g->GetPointX(p)};
+        auto dsdomega {g->GetPointY(p)};
+        auto uy {g->GetErrorY(p)};
+        // Apply integration limits
+        if(xmin != -11 && thetacm < xmin)
+            continue;
+        if(xmax != -11 && thetacm > xmax)
+            continue;
+        // Common factor to both nominal value and uncertainty
+        auto factor {TMath::TwoPi() * (bw * TMath::DegToRad()) * TMath::Sin(thetacm * TMath::DegToRad())};
+        integral += factor * dsdomega;
+        uncertainty += TMath::Power(factor * g->GetErrorY(p), 2);
+    }
+    uncertainty = TMath::Sqrt(uncertainty);
+    return {integral, uncertainty};
+}
+
+TCanvas* Angular::Comparator::SFfromIntegral()
+{
+    return nullptr;
 }

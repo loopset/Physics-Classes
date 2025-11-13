@@ -1,6 +1,7 @@
 #ifndef AngComparator_h
 #define AngComparator_h
 
+#include "TCanvas.h"
 #include "TEfficiency.h"
 #include "TFitResult.h"
 #include "TGraphErrors.h"
@@ -63,6 +64,9 @@ public:
     // Canvas with ratio per point
     TCanvas* QuotientPerPoint();
 
+    // Canvas with SF of integrated xs
+    TCanvas* SFfromIntegral();
+
     // Replace theretical graph with argument. Useful to override CM xs to Lab
     void Replace(const std::string& name, TGraphErrors* gnew);
 
@@ -72,6 +76,8 @@ public:
     const std::vector<std::string>& GetKeys() const { return fKeys; }
     const std::unordered_map<std::string, TGraphErrors*> GetTheoGraphs() const { return fTheo; }
     TFitResult& GetTFitRes(const std::string& model) { return fRes.at(model); }
+    std::pair<double, double> IntegralExp();
+    double IntegralModel(const std::string& model);
 
     // Save in file(deprecated function as of jan 25)
     void Write(const std::string& file);
@@ -84,6 +90,7 @@ private:
     TGraphErrors* ProcessTheo(TGraphErrors* theo);
     TGraphErrors* GetFitGraph(TGraphErrors* g, TF1* f);
     TLegend* BuildLegend(double width = 0.4, double height = 0.2);
+    std::pair<double, double> DoIntegral(TGraphErrors* g, double xmin = -11, double xmax = -11);
 };
 } // namespace Angular
 

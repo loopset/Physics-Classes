@@ -37,7 +37,8 @@ void PhysOMP::OMP::Print() const
     std::cout << "   aso : " << favso << '\n';
     std::cout << "-> Imaginary spin-orbit : " << '\n';
     std::cout << "   Wso : " << fWso << '\n';
-    std::cout << "   FRESCO Wso / 2 : " << fWso / 2 << '\n';
+    std::cout << "   FRESCO or TWOFNR : " << '\n';
+    std::cout << "   Wso / 2 : " << fWso / 2 << '\n';
     std::cout << "   rwso : " << frwso << '\n';
     std::cout << "   awso : " << fawso << RESET << '\n';
 }
@@ -263,7 +264,7 @@ PhysOMP::CH89::CH89(int Z, int A, double energy) : OMP(Z, A, energy, 1, 1, "Chap
 {
 
     // Coulomb
-    frc = 1.238 + 0.116 * std::pow(fA, -1. / 3);
+    frc = 1.24 + 0.12 * std::pow(fA, -1. / 3); // used values in Table 6 of paper
     // Coulomb energy correction
     double Rc {frc * std::pow(fA, 1. / 3)};
     double Ec {6 * 1 * fZ * 1.44 / (5 * Rc)};
@@ -309,7 +310,7 @@ PhysOMP::BecchettiGreenless::BecchettiGreenless(int Z, int A, double energy)
 {
 
     // Coulomb
-    frc = 1.3;
+    frc = 1.25; // Same as in TWOFNR front... otherwise real BG uses Elton's parametrisation that I cannot access to.
     // Coulomb energy correction
     double Rc {frc * std::pow(fA, 1. / 3)};
     // double Ec {6 * 1 * fZ * 1.44 / (5 * Rc)};
