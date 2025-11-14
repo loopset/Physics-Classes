@@ -11,7 +11,9 @@
 #include "TGraph.h"
 #include "TGraphAsymmErrors.h"
 #include "TGraphErrors.h"
+#include "TH1.h"
 #include "TLegend.h"
+#include "TLine.h"
 #include "TMath.h"
 #include "TMultiGraph.h"
 #include "TROOT.h"
@@ -588,7 +590,74 @@ std::pair<double, double> Angular::Comparator::DoIntegral(TGraphErrors* g, doubl
     return {integral, uncertainty};
 }
 
-TCanvas* Angular::Comparator::SFfromIntegral()
+TCanvas* Angular::Comparator::SFfromIntegral(bool print)
 {
-    return nullptr;
+    // Create histograms for models
+    static int counter {};
+    auto* hint {new TH1D {TString::Format("hInt%d", counter), "Integrated xs;Model;#sigma [mb]",
+                          static_cast<int>(fTheo.size()), 0, static_cast<double>(fTheo.size() + 1)}};
+    hint->SetFillColor(38);
+    hint->SetBarWidth(0.4);
+    hint->SetBarOffset(0.5 - 0.4 / 2);
+    auto* hsf {new TH1D {TString::Format("hSFInt%d", counter), "SF from integrated xs;Model;SF",
+                         static_cast<int>(fTheo.size()), 0, static_cast<double>(fTheo.size() + 1)}};
+    hsf->SetFillColor(8);
+    hsf->SetBarWidth(0.4);
+    hsf->SetBarOffset(0.5 - 0.4 / 2);
+    int bin {1};
+    for(const auto& [key, _] : fTheo)
+    {
+        hint->GetXaxis()->SetBinLabel(bin, key.c_str());
+        hsf->GetXaxis()->SetBinLabel(bin, key.c_str());
+        bin++;
+    }
+    // Compute integrals!
+    auto exp {IntegralExp()};
+    std::vector<double> theos, sfs;
+    if(print)
+    {
+        std::cout << BOLDGREEN << "·· Integrated cross-sections" << '\n';
+        std::cout << "-> Experimental : " << '\n';
+        std::cout << "   Integral     :" << exp.first << " +/- " << exp.second << " mb" << '\n';
+    }
+    for(const auto& [key, g] : fTheo)
+    {
+        theos.push_back(IntegralModel(key));
+        sfs.push_back(exp.first / theos.back());
+        if(print)
+        {
+            std::cout << "-> Model    : " << key << '\n';
+            std::cout << "   Integral : " << theos.back() << " mb" << '\n';
+            std::cout << "   SF       : " << exp.first / theos.back() << " +/- " << exp.second / theos.back() << " mb"
+                      << '\n';
+        }
+    }
+    if(print)
+        std::cout << "····················" << RESET;
+    // Fill histos
+    bin = 1;
+    for(int i = 0; i < theos.size(); i++)
+    {
+        hint->SetBinContent(bin, theos[i]);
+        hsf->SetBinContent(bin, sfs[i]);
+        bin++;
+    }
+    // Plot!
+    auto* c {new TCanvas {TString::Format("cCompInt%d", counter), "Integrated xs canvas"}};
+    counter++;
+    c->DivideSquare(2);
+    c->cd(1);
+    hint->Draw("b");
+    // Draw also line for experimental value
+    gPad->Update();
+    auto* line {new TLine {gPad->GetUxmin(), exp.first, gPad->GetUxmax(), exp.first}};
+    line->SetLineColor(8);
+    line->SetLineWidth(2);
+    line->SetLineStyle(2);
+    line->Draw();
+    c->cd(2);
+    hsf->Draw("b");
+    // WOrkaround to avoid errors with DrawClones outside class
+    gROOT->SetSelectedPad(nullptr);
+    return c;
 }

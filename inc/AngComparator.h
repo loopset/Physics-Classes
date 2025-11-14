@@ -65,7 +65,7 @@ public:
     TCanvas* QuotientPerPoint();
 
     // Canvas with SF of integrated xs
-    TCanvas* SFfromIntegral();
+    TCanvas* SFfromIntegral(bool print = false);
 
     // Replace theretical graph with argument. Useful to override CM xs to Lab
     void Replace(const std::string& name, TGraphErrors* gnew);
