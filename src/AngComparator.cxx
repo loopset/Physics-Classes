@@ -168,6 +168,8 @@ void Angular::Comparator::Fit(double xmin, double xmax)
         fRes[name] = TFitResult(*res.Get());
     }
     Print();
+    // Compute also SF from integral
+    DoSFfromIntegral();
 }
 
 void Angular::Comparator::Print() const
@@ -477,11 +479,18 @@ void Angular::Comparator::Write(const std::string& file)
     auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
     // Save in two vectors (std::map not supported wo dict in root file)
     std::vector<std::string> names;
-    std::vector<PhysUtils::SpectroscopicFactor> sfs;
+    std::vector<PhysUtils::SpectroscopicFactor> sfs, intsfs;
     for(const auto& [model, res] : fRes)
     {
         names.push_back(model);
         sfs.emplace_back(res.Parameter(0), res.ParError(0), res.Chi2() / res.Ndf(), res.Ndf());
+    }
+    // If integrated SFs
+    if(fIntSFs.size())
+    {
+        for(const auto& [model, pair] : fIntSFs)
+            intsfs.emplace_back(pair.first, pair.second, -1, -1);
+        f->WriteObject(&intsfs, "IntSFs");
     }
     f->WriteObject(&names, "Models");
     f->WriteObject(&sfs, "SFs");
@@ -503,9 +512,15 @@ void Angular::Comparator::Write(const std::string& key, const std::string& file)
     PhysUtils::SFCollection sfcol;
     for(const auto& [model, res] : fRes)
         sfcol.Add(model, {res.Parameter(0), res.ParError(0), res.Chi2() / res.Ndf(), (int)res.Ndf()});
+    // Integrated SFs
+    PhysUtils::SFCollection intcol;
+    for(const auto& [model, pair] : fIntSFs)
+        intcol.Add(model, {pair.first, pair.second, -1, -1});
     // Write!
     f->cd();
     f->WriteObject(&sfcol, (key + "_sfs").c_str());
+    if(fIntSFs.size())
+        f->WriteObject(&intcol, (key + "_intsfs").c_str());
     if(fMulti)
         f->WriteObject(fMulti, (key + "_mg").c_str());
     if(weOwnFile)
@@ -590,7 +605,18 @@ std::pair<double, double> Angular::Comparator::DoIntegral(TGraphErrors* g, doubl
     return {integral, uncertainty};
 }
 
-TCanvas* Angular::Comparator::SFfromIntegral(bool print)
+void Angular::Comparator::DoSFfromIntegral()
+{
+    // Compute integrals!
+    auto exp {IntegralExp()};
+    for(const auto& [key, g] : fTheo)
+    {
+        auto theo {IntegralModel(key)};
+        fIntSFs[key] = {exp.first / theo, exp.second / theo};
+    }
+}
+
+TCanvas* Angular::Comparator::DrawSFfromIntegral(bool print)
 {
     // Create histograms for models
     static int counter {};
@@ -611,29 +637,28 @@ TCanvas* Angular::Comparator::SFfromIntegral(bool print)
         hsf->GetXaxis()->SetBinLabel(bin, key.c_str());
         bin++;
     }
-    // Compute integrals!
+    // Compute integrals again to plot histograms
     auto exp {IntegralExp()};
     std::vector<double> theos, sfs;
     if(print)
     {
         std::cout << BOLDGREEN << "·· Integrated cross-sections" << '\n';
         std::cout << "-> Experimental : " << '\n';
-        std::cout << "   Integral     :" << exp.first << " +/- " << exp.second << " mb" << '\n';
+        std::cout << "   Integral     : " << exp.first << " +/- " << exp.second << " mb" << '\n';
     }
     for(const auto& [key, g] : fTheo)
     {
         theos.push_back(IntegralModel(key));
-        sfs.push_back(exp.first / theos.back());
+        sfs.push_back(fIntSFs[key].first);
         if(print)
         {
             std::cout << "-> Model    : " << key << '\n';
             std::cout << "   Integral : " << theos.back() << " mb" << '\n';
-            std::cout << "   SF       : " << exp.first / theos.back() << " +/- " << exp.second / theos.back() << " mb"
-                      << '\n';
+            std::cout << "   SF       : " << fIntSFs[key].first << " +/- " << fIntSFs[key].second << " mb" << '\n';
         }
     }
     if(print)
-        std::cout << "····················" << RESET;
+        std::cout << "····················" << '\n' << RESET;
     // Fill histos
     bin = 1;
     for(int i = 0; i < theos.size(); i++)
@@ -655,6 +680,8 @@ TCanvas* Angular::Comparator::SFfromIntegral(bool print)
     line->SetLineWidth(2);
     line->SetLineStyle(2);
     line->Draw();
+    if(exp.first < gPad->GetUymin())
+        hint->GetYaxis()->SetRangeUser(0.75 * exp.first, gPad->GetUymax());
     c->cd(2);
     hsf->Draw("b");
     // WOrkaround to avoid errors with DrawClones outside class

@@ -8,9 +8,10 @@
 void PhysOMP::OMP::Print() const
 {
     // INFO: 10/11/2025. In the SO part, all definitions have been taken as products of L.S
-    // In some papers (mainly for A=1,3 potentials), they use L.sigma, where sigma = 2S.
+    // In some papers (mainly for A=1,3 potentials), they use L.sigma, where sigma = 2S for a S=1/2hbar particle
     // In that case, Vso in the paper have been multiplied x2 to change to LS representation.
     // If using Fresco or 2Fnr, continue using the corresponding cout
+    // Note that for S=1 particles (deuteron), S = sigma, so be careful when reading the paper
     std::cout << BOLDYELLOW << "····· " << fName << " ·····" << '\n';
     std::cout << "   For target (A, Z) : (" << fA << ", " << fZ << ")" << '\n';
     std::cout << "   and projectile (A, Z) : (" << fTargetA << ", " << fTargetZ << ") @ " << fEnergy << " MeV" << '\n';
@@ -91,7 +92,7 @@ PhysOMP::Haixia::Haixia(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "
     frs = 1.334 + 0.152 * std::pow(fA, -1. / 3);
     fas = 0.531 + 0.062 * std::pow(fA, 1. / 3);
     // Real spin-orbit
-    fVso = 3.557 * 2; // WARNING: L.sigma in paper
+    fVso = 3.557; // WARNING: L.sigma in paper, but deuteron is spin=1, so S = sigma.
     frvso = 0.972;
     favso = 1.011;
 }

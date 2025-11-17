@@ -30,6 +30,8 @@ private:
     std::unordered_map<std::string, TGraphErrors*> fFit {};
     // Fit results, containing SF
     std::unordered_map<std::string, TFitResult> fRes {};
+    // SF from quotient of integrated cross-sections
+    std::unordered_map<std::string, std::pair<double, double>> fIntSFs {};
     // Store also fitting range
     std::pair<double, double> fFitRange {-1, -1};
     // To format lines...
@@ -65,7 +67,7 @@ public:
     TCanvas* QuotientPerPoint();
 
     // Canvas with SF of integrated xs
-    TCanvas* SFfromIntegral(bool print = false);
+    TCanvas* DrawSFfromIntegral(bool print = false);
 
     // Replace theretical graph with argument. Useful to override CM xs to Lab
     void Replace(const std::string& name, TGraphErrors* gnew);
@@ -76,8 +78,10 @@ public:
     const std::vector<std::string>& GetKeys() const { return fKeys; }
     const std::unordered_map<std::string, TGraphErrors*> GetTheoGraphs() const { return fTheo; }
     TFitResult& GetTFitRes(const std::string& model) { return fRes.at(model); }
+    void DoSFfromIntegral();
     std::pair<double, double> IntegralExp();
     double IntegralModel(const std::string& model);
+    std::pair<double, double> GetIntSF(const std::string& model) const { return fIntSFs.at(model); }
 
     // Save in file(deprecated function as of jan 25)
     void Write(const std::string& file);
