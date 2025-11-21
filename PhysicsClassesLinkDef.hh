@@ -15,7 +15,7 @@
 #pragma link C++ class Fitters::Objective;
 #pragma link C++ class Fitters::Runner;
 #pragma link C++ class Fitters::Plotter;
-#pragma link C++ class Fitters::Interface;
+#pragma link C++ class Fitters::Interface+;
 
 // ANGULAR
 #pragma link C++ namespace Angular;

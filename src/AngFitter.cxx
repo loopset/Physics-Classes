@@ -523,3 +523,23 @@ void Angular::Fitter::Read(const std::string& file)
     auto fitter {f->Get<Fitter>("Fitter")};
     *this = *fitter;
 }
+
+void Angular::Fitter::Print() const
+{
+    std::cout << BOLDYELLOW << "···· Angular::Fitter settings ····" << '\n';
+    std::cout << "  AllowFreeMean  ? " << std::boolalpha << fAllowFreeMean << '\n';
+    std::cout << "  FreeMeanRange  : " << fFreeMeanRange << '\n';
+    for(const auto& state : fWhichFreeMean)
+        std::cout << "    For " << state << '\n';
+    std::cout << "  AllowFreeSigma ? " << std::boolalpha << fAllowFreeSigma << '\n';
+    std::cout << "  FreeSigmaRange : " << fFreeSigmaRange << '\n';
+    for(const auto& state : fWhichFreeSigma)
+        std::cout << "    For " << state << '\n';
+    std::cout << "  AllowFreeGamma ? " << std::boolalpha << fAllowFreeGamma << '\n';
+    std::cout << "  FreeGammaRange : " << fFreeGammaRange << '\n';
+    for(const auto& state : fWhichFreeGamma)
+        std::cout << "    For " << state << '\n';
+    std::cout << "  Ignore PS      ? " << std::boolalpha << fIgnorePS << '\n';
+    std::cout << "  ManualRange    :  [" << fManualRange.first << ", " << fManualRange.second << "]" << '\n';
+    std::cout << "······························" << RESET << '\n';
+}

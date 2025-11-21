@@ -35,14 +35,14 @@ private:
     std::map<Key, Info> fLabels {};  //!< Labels for state
     bool fIsRead {};                 //! !< Whether this object is constructed from file or not
     // Settings for Fit stage
-    Initial fPars {};  //! //!< Initial or (once fitted) parameter values
-    Initial fUncs {};  //! //!< Uncertainties of parameters
-    Bounds fBounds {}; //!
-    Fixed fFix {};     //!
-    Step fStep {};     //!
+    Initial fPars {}; //!< Initial or (once fitted) parameter values
+    Initial fUncs {}; //!< Uncertainties of parameters
+    Bounds fBounds {};
+    Fixed fFix {};
+    Step fStep {};
     std::unordered_map<std::string, unsigned int> fNParsType {
-        {"g", 3}, {"v", 4}, {"ps", 1}, {"cte", 1}};                       //! !< Number of pars pers type
-    std::vector<std::string> fParNames {"Amp", "Mean", "Sigma", "Gamma"}; //! !< Names of parameters
+        {"g", 3}, {"v", 4}, {"ps", 1}, {"cte", 1}};                       // !< Number of pars pers type
+    std::vector<std::string> fParNames {"Amp", "Mean", "Sigma", "Gamma"}; // !< Names of parameters
     unsigned int fNGaus {};
     unsigned int fNVoigt {};
     unsigned int fNPS {};

@@ -127,6 +127,8 @@ public:
     void Write(const std::string& file);
     void Read(const std::string& file);
 
+    void Print() const;
+
 private:
     void AddData(double exmin, double exmax);
     void AddModels();
