@@ -99,6 +99,31 @@ PhysOMP::Haixia::Haixia(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "
 
 PhysOMP::DA1p::DA1p(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "DA1p")
 {
+    if(fZ == 3 && fA == 7) // Special case for 7Li for this potential
+    {
+        // Coulomb
+        frc = 1.3;
+        // Corrections
+        double Rc {frc * std::pow(fA, 1. / 3)};
+        double Ec {6 * 1 * fZ * 1.44 / (5 * Rc)};
+        // Real volume
+        fVr = 26.1 + 1.19 * (fEnergy - Ec);
+        frv = 1.45 + (0.097 * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
+        fav = 0.844;
+        // Imaginary volume
+        double Wv0 {0};
+        double Wve {0};
+        fWv = Wv0 + Wve * (fEnergy - Ec);;
+        frw = 2.12 + (0.022 * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
+        faw = 0.261;
+        // Imaginary surface
+        double Ws0 {215};
+        double Wse {-16.1};
+        fWs = Ws0 + Wse * (fEnergy - Ec);
+        frs = frw;
+        fas = faw;
+        return;
+    }
     // Coulomb
     frc = 1.3;
     // Corrections
@@ -106,7 +131,7 @@ PhysOMP::DA1p::DA1p(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "DA1p
     double Ec {6 * 1 * fZ * 1.44 / (5 * Rc)};
     // Real volume
     fVr = 98.9 - 0.279 * (fEnergy - Ec);
-    frv = 1.11 + (-0.172 + 0.00117 * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
+    frv = 1.11 + (-0.167 + 0.00117 * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
     fav = 0.776;
     // Imaginary volume
     double Wv0 {11.5};
