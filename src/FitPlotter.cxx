@@ -20,7 +20,7 @@ TGraph* Fitters::Plotter::GetGlobalFit()
         ret->SetPoint(ret->GetN(), x, (*fModel)(&x, fRes->GetParams()));
     }
     // Disable use spline
-    fModel->SetUseSpline(false);
+    fModel->SetUseSpline(fModel->GetUseSpline());
     // A few default settings
     ret->SetLineWidth(2);
     ret->SetLineColor(kRed);

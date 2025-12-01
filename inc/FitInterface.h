@@ -91,6 +91,7 @@ public:
     double GetUnc(const Key& key, unsigned int idx);
     std::vector<double> GetUncAll(unsigned int idx);
     double GetGuess(const Key& key) const;
+    std::map<std::string, Angular::Comparator> GetComps() const { return fComparators; }
     Angular::Comparator* GetComp(const Key& key) { return &fComparators.at(key); }
     Key GetKeyOfGuess(double guess, double width = 0.15);
     std::string GetTheoCrossSection(const Key& key);

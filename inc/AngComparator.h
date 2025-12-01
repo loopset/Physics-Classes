@@ -73,6 +73,7 @@ public:
     void Replace(const std::string& name, TGraphErrors* gnew);
 
     // Getters
+    TGraphErrors* GetExp() const { return fExp; }
     double GetSF(const std::string& model);
     double GetuSF(const std::string& model);
     const std::vector<std::string>& GetKeys() const { return fKeys; }
