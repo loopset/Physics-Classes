@@ -150,6 +150,11 @@ void Angular::Fitter::ConfigRunner(int iv, Fitters::Runner& runner)
 
         // 2-> Initial value
         auto value {fGlobalFit.Value(p)};
+        if(fManualPars.count(str.Data()))
+        {
+            value = fManualPars[str.Data()];
+            std::cout << BOLDRED << "Setting manual parameter " << str << " to : " << value << RESET << '\n';
+        }
         f.Config().ParSettings(p).SetValue(value);
         // 3-> Bounds
         double min {};

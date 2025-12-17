@@ -68,6 +68,8 @@ private:
     std::map<int, std::vector<double>> fPSFixAmps {}; //!
     // Specify a manual range, do not use one used in config file
     std::pair<double, double> fManualRange {-1, -1};
+    // Specify custom options for certain parameters
+    std::unordered_map<std::string, double> fManualPars {};
 
 public:
     Fitter() = default;
@@ -111,11 +113,13 @@ public:
     TGraphErrors* GetSumCountsGraph(const std::string& peak) const;
     const std::vector<std::string>& GetParNames() const { return fParNames; }
     const std::vector<TFitResult>& GetTFitResults() const { return fRes; }
+    TFitResult& GetTFitResult(int idx) { return fRes[idx]; }
     std::vector<double> GetResIvs() const { return fResIvs; }
     std::vector<TGraph*> GetResGlobal() const { return fResGlobal; }
     std::vector<std::vector<TH1D*>> GetResHistos() const { return fResHistos; }
     std::vector<std::vector<std::string>> GetResNames() const { return fResNames; }
     Intervals* GetIvs() const { return fIvs; }
+    void SetManualPar(const std::string& parname, double value) { fManualPars[parname] = value; }
 
     // Main methods
     void Run(bool print = false);
@@ -129,13 +133,14 @@ public:
 
     void Print() const;
 
+    void FillResHistos();
+
 private:
     void AddData(double exmin, double exmax);
     void AddModels();
     void ConfigRunner(int iv, Fitters::Runner& runner);
     void DoCounts(unsigned int iv, int nsigma);
     void CountsBySum(const std::string& key, unsigned int iv, int nsigma, TF1* f);
-    void FillResHistos();
 };
 } // namespace Angular
 

@@ -83,6 +83,7 @@ public:
     std::pair<double, double> IntegralExp();
     double IntegralModel(const std::string& model);
     std::pair<double, double> GetIntSF(const std::string& model) const { return fIntSFs.at(model); }
+    std::pair<double, double> GetFitRange() const { return fFitRange; }
 
     // Save in file(deprecated function as of jan 25)
     void Write(const std::string& file);
