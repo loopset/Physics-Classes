@@ -19,6 +19,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 Angular::Intervals::Intervals(double xmin, double xmax, const ROOT::RDF::TH1DModel& model, double step, int nps)
 {
@@ -232,4 +233,12 @@ void Angular::Intervals::Write(const std::string& file)
 {
     auto f {std::make_unique<TFile>(file.c_str(), "recreate")};
     f->WriteObject(this, "Intervals");
+}
+
+std::vector<double> Angular::Intervals::GetCenters() const
+{
+    std::vector<double> ret;
+    for(int i = 0; i < GetSize(); i++)
+        ret.push_back(GetCenter(i));
+    return ret;
 }

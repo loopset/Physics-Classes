@@ -52,6 +52,7 @@ public:
     std::vector<std::vector<TH1D*>> GetHistosPS() const { return fHsPS; }
     double GetLow(int i) const { return fRanges[i].first; }
     double GetCenter(int i) const { return (fRanges[i].first + fRanges[i].second) / 2; }
+    std::vector<double> GetCenters() const;
     double GetUp(int i) const { return fRanges[i].second; }
     const std::vector<double>& GetOmegas() const { return fOmegas; }
     double GetOmega(int i) const { return fOmegas[i]; }
