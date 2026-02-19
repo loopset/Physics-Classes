@@ -68,6 +68,7 @@ public:
 
     // Main functions
     double Eval(double Ex) { return fGraph->Eval(Ex); }
+    void Scale(double factor) { fGraph->Scale(factor); }
 
     void Draw();
 

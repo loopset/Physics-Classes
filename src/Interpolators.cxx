@@ -232,9 +232,14 @@ void Interpolators::Sigmas::SaveAs(const std::string& file, const std::string& n
 void Interpolators::Sigmas::Read(const std::string& file, const std::string& name)
 {
     auto fin {std::make_unique<TFile>(file.c_str())};
-    fGraph = fin->Get<TGraphErrors>(name.c_str());
-    if(!fGraph)
+    // Read object from file
+    auto* g {fin->Get<TGraphErrors>(name.c_str())};
+    if(!g)
         throw std::runtime_error("Interpolators::Sigmas::Read(): cannot load " + name + " in file " + file);
+    // And build new Tgraph. It is just a copy, bc if we take the obj from the file directly
+    // when applying Scale and drawing, the old axes zoom is shown... Because it is stored alongside the TGraphErrors
+    fGraph = new TGraphErrors {g->GetN(), g->GetX(), g->GetY(), nullptr, g->GetEY()};
+    fGraph->SetTitle(";E_{x} [MeV];#sigma_{Ex} [MeV]");
 }
 
 void Interpolators::Sigmas::Draw()

@@ -1,6 +1,9 @@
 #include "FitCompositeTF1.h"
 
 #include "TGraphErrors.h"
+#include "TH1.h"
+#include "TString.h"
+#include "TVirtualFitter.h"
 
 #include <initializer_list>
 #include <string>
@@ -89,19 +92,44 @@ void Fitters::CompositeTF1::Init()
     }
 }
 
-void Fitters::CompositeTF1::Draw(const std::string& opts)
+void Fitters::CompositeTF1::InitDraw(TH1* hmodel)
 {
-    auto* graph {new TGraphErrors};
+    // Settings
     auto xmin {fComposite->GetXmin()};
     auto xmax {fComposite->GetXmax()};
     auto step {(xmax - xmin) / 300};
+    // Global
+    fGlobal = new TGraphErrors;
     for(double x = xmin; x <= xmax; x += step)
-        graph->AddPoint(x, fComposite->Eval(x));
-    graph->SetLineWidth(2);
-    graph->SetLineColor(kRed);
-    graph->Draw("l same");
+        fGlobal->SetPointX(fGlobal->GetN(), x);
+    fGlobal->SetLineWidth(2);
+    fGlobal->SetLineColor(kRed);
+    // Add also 1 sigma band
+    TVirtualFitter::GetFitter()->GetConfidenceIntervals(fGlobal, 0.68);
+    // Functions
+    if(!hmodel)
+        return;
     for(auto func : fFuncs)
-        func->Draw(opts.data());
+    {
+        auto h {(TH1D*)hmodel->Clone(TString::Format("h%s", func->GetName()))};
+        h->SetTitle(TString::Format("%s fit", func->GetName()));
+        h->Reset();
+        for(int b = 1; b <= h->GetNbinsX(); b++)
+            h->SetBinContent(b, func->Eval(h->GetBinCenter(b)));
+        h->SetLineWidth(2);
+        fHs.push_back(h);
+    }
+}
+
+void Fitters::CompositeTF1::Draw(const std::string& opts)
+{
+    if(!fGlobal)
+        InitDraw();
+    fGlobal->Draw("xl same");
+    for(auto* h : fHs)
+    {
+        h->Draw("same plc pmc");
+    }
 }
 
 std::vector<double> Fitters::CompositeTF1::Integral()

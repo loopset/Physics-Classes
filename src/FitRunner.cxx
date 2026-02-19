@@ -86,8 +86,12 @@ bool Fitters::Runner::Fit(bool print, bool hesse, bool minos)
     auto ret {fFitter.FitFCN()};
     if(hesse)
     {
+        // In principle, Minuit2 with strategy=1 automatically calls Hesse after minimum if found
+        // So no need for this unless you change strategy or you want to ensure Hess is called
+        // Minimum differences between calls are found, idk why... Maybe numeric precision errors?
+        // https://root-forum.cern.ch/t/errors-given-by-root-minuit2minimizer-are-confusing/57166/2
         if(print)
-            std::cout << "Fitters::Runner::Fit(): using Hessian errors instead of MIGRAD approximative ones" << '\n';
+            std::cout << "Fitters::Runner::Fit(): calling HESSIAN after MIGRAD" << '\n';
         fFitter.CalculateHessErrors();
     }
     if(minos)

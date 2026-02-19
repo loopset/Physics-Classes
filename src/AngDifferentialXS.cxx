@@ -136,7 +136,7 @@ void Angular::DifferentialXS::Write(const std::string& dir, const std::string& n
 {
     // Run for each peak
     auto pathXS {dir + "/xs/"};
-    gSystem->mkdir(pathXS.c_str());
+    gSystem->mkdir(pathXS.c_str(), true);
     for(const auto& [peak, g] : fXS)
     {
         // 1-> Init output file
