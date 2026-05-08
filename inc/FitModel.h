@@ -6,6 +6,7 @@
 
 #include "Math/IParamFunction.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -19,6 +20,7 @@ class Model : public ROOT::Math::IParametricFunctionMultiDimTempl<double>
 public:
     typedef std::vector<std::vector<double>> ParPack;
     typedef std::vector<ParPack> ParVec;
+    using GammaFunc = std::function<double(double, double)>;
 
 private:
     // PS data (by copied histograms)
@@ -40,6 +42,8 @@ private:
     std::vector<double> fPars {};
     std::vector<std::string> fParNames {};
     std::vector<std::pair<std::string, unsigned int>> fChart;
+    // Store penetrability functions for each voigt
+    std::map<int, GammaFunc> fGammaFuncs {};
     // Configuration options
     bool fUseSpline {false};
 
@@ -83,6 +87,9 @@ public:
 
     void Print() const;
 
+    // Add option to have penetrabilities
+    void AddGammaL(int vIdx, int l, double s, double mu, double R);
+
 private:
     void InitSplines();
     void InitFuncParNames();
@@ -90,6 +97,7 @@ private:
     std::pair<std::string, int> GetTypeIdx(const std::string& name) const;
     // Override of IBaseFunction
     double DoEvalPar(const double* x, const double* p) const override;
+    GammaFunc InitGammaL(int l, double ctes);
 };
 } // namespace Fitters
 

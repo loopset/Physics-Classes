@@ -6,6 +6,7 @@
 
 #include "PhysColors.h"
 
+#include <functional>
 #include <ios>
 #include <iostream>
 #include <memory>
@@ -166,7 +167,15 @@ double Fitters::Model::EvalWithPacks(double x, ParPack& gaus, ParPack& voigt, Pa
         ret += gaus[g][0] * TMath::Gaus(x, gaus[g][1], gaus[g][2]);
     // 2-->Voigts
     for(int v = 0; v < fNVoigt; v++)
-        ret += voigt[v][0] * TMath::Voigt(x - voigt[v][1], voigt[v][2], voigt[v][3]);
+    {
+        auto gamma {voigt[v][3]};
+        if(fGammaFuncs.count(v))
+        {
+            // TODO: IMPLEMENT CORRECT version
+            gamma *= fGammaFuncs.at(v)(x, voigt[v][1]);
+        }
+        ret += voigt[v][0] * TMath::Voigt(x - voigt[v][1], voigt[v][2], gamma);
+    }
     // 3-->Phase spaces
     for(int ps = 0; ps < fNPS; ps++)
     {
@@ -204,4 +213,23 @@ void Fitters::Model::Print() const
     std::cout << "-> Cte    ? " << std::boolalpha << fCte << '\n';
     std::cout << "-> UseSpline ? " << std::boolalpha << fUseSpline << '\n';
     std::cout << "······························" << RESET << '\n';
+}
+
+Fitters::Model::GammaFunc Fitters::Model::InitGammaL(int l, double ctes)
+{
+    std::function<double(double, double)> ret;
+    if(l == 0)
+    {
+        ret = [ctes](double ed, double er) { return ctes * 4 * ed / er; };
+    }
+    if(l == 1)
+    {
+        ret = [ctes](double ed, double er) { return ctes * 200 * ed / er; };
+    }
+    return ret;
+}
+
+void Fitters::Model::AddGammaL(int vIdx, int l, double s, double mu, double R)
+{
+    fGammaFuncs[vIdx] = InitGammaL(l, s * mu * R);
 }
