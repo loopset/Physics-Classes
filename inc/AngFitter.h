@@ -11,6 +11,7 @@
 #include "FitModel.h"
 #include "FitRunner.h"
 
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -134,6 +135,9 @@ public:
     void Print() const;
 
     void FillResHistos();
+
+    // Function to apply a generic lambda to each model
+    void ApplyLambdaToModels(const std::function<void(Fitters::Model&)>& func);
 
 private:
     void AddData(double exmin, double exmax);

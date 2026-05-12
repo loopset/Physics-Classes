@@ -548,3 +548,9 @@ void Angular::Fitter::Print() const
     std::cout << "  ManualRange    :  [" << fManualRange.first << ", " << fManualRange.second << "]" << '\n';
     std::cout << "······························" << RESET << '\n';
 }
+
+void Angular::Fitter::ApplyLambdaToModels(const std::function<void(Fitters::Model&)>& func)
+{
+    for(auto& model : fModels)
+        func(model);
+}
