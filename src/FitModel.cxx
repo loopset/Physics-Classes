@@ -171,7 +171,6 @@ double Fitters::Model::EvalWithPacks(double x, ParPack& gaus, ParPack& voigt, Pa
         auto gamma {voigt[v][3]};
         if(fGammaFuncs.count(v))
         {
-            // TODO: IMPLEMENT CORRECT version
             gamma *= fGammaFuncs.at(v)(x, voigt[v][1]);
         }
         ret += voigt[v][0] * TMath::Voigt(x - voigt[v][1], voigt[v][2], gamma);
