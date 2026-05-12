@@ -212,24 +212,48 @@ void Fitters::Model::Print() const
     std::cout << "-> NPS    : " << fNPS << '\n';
     std::cout << "-> Cte    ? " << std::boolalpha << fCte << '\n';
     std::cout << "-> UseSpline ? " << std::boolalpha << fUseSpline << '\n';
+    std::cout << "-> NGammaFuncs(l) : " << fGammaFuncs.size() << '\n';
     std::cout << "······························" << RESET << '\n';
 }
 
-Fitters::Model::GammaFunc Fitters::Model::InitGammaL(int l, double ctes)
+Fitters::Model::GammaFunc Fitters::Model::InitGammaL(int l, double s, double mu, double R)
 {
     std::function<double(double, double)> ret;
+    double hbar {197.3269804}; // MeV*fm
     if(l == 0)
     {
-        ret = [ctes](double ed, double er) { return ctes * 4 * ed / er; };
+        // Ex - s = Ed = decay energy, Er = resonance energy
+        ret = [hbar, s](double Ex, double Er) { return std::pow(std::abs(Ex - s) / Er, 0.5); };
     }
-    if(l == 1)
+
+    else if(l == 1)
     {
-        ret = [ctes](double ed, double er) { return ctes * 200 * ed / er; };
+        ret = [hbar, s, mu, R](double Ex, double Er)
+        {
+            return std::pow(std::abs(Ex - s) / Er, 1.5) * (2 * std::abs(Ex - s) / (Er + std::abs(Ex - s))) *
+                   (1. + (2. * mu * Er * R * R) / (hbar * hbar)) / (1. + (2. * mu * std::abs(Ex - s) * R * R) / (hbar * hbar));
+        };
+    }
+
+    else if(l == 2)
+    {
+        ret = [hbar, s, mu, R](double Ex, double Er)
+        {
+            return std::pow(std::abs(Ex - s) / Er, 2.5) * (2 * std::abs(Ex - s) / (Er + std::abs(Ex - s))) *
+                   (9. + (6. * mu * Er * R * R) / (hbar * hbar) + std::pow((2. * mu * Er * R * R) / (hbar * hbar), 2)) /
+                   (9. + (6. * mu * std::abs(Ex - s) * R * R) / (hbar * hbar) +
+                    std::pow((2. * mu * std::abs(Ex - s) * R * R) / (hbar * hbar), 2));
+        };
+    }
+    else
+    {
+        throw std::runtime_error("Model::InitGammaL(): currently only l = 0, 1, 2 are implemented");
     }
     return ret;
 }
 
+// s -> separation energy [MeV], mu -> reduced mass [MeV/c^2], R -> channel radius [fm]
 void Fitters::Model::AddGammaL(int vIdx, int l, double s, double mu, double R)
 {
-    fGammaFuncs[vIdx] = InitGammaL(l, s * mu * R);
+    fGammaFuncs[vIdx] = InitGammaL(l, s, mu, R);
 }

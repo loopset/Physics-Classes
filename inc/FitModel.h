@@ -7,6 +7,7 @@
 #include "Math/IParamFunction.h"
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -70,6 +71,7 @@ public:
         auto ret {new Model {fNGauss, fNVoigt, fPS, fCte}};
         ret->SetParameters(Parameters());
         ret->SetUseSpline(fUseSpline);
+        ret->SetGammaFuncs(fGammaFuncs);
         return ret;
     };
     bool HasGradient() const override { return false; }
@@ -89,6 +91,8 @@ public:
 
     // Add option to have penetrabilities
     void AddGammaL(int vIdx, int l, double s, double mu, double R);
+    void SetGammaFuncs(const std::map<int, GammaFunc>& funcs) { fGammaFuncs = funcs; }
+    const std::map<int, GammaFunc>& GetGammaFuncs() const { return fGammaFuncs; }
 
 private:
     void InitSplines();
@@ -97,7 +101,8 @@ private:
     std::pair<std::string, int> GetTypeIdx(const std::string& name) const;
     // Override of IBaseFunction
     double DoEvalPar(const double* x, const double* p) const override;
-    GammaFunc InitGammaL(int l, double ctes);
+    // Function to initialize penetrability function for given l, s, mu and R
+    GammaFunc InitGammaL(int l, double s, double mu, double R);
 };
 } // namespace Fitters
 
