@@ -5,7 +5,6 @@
 #include "TF1.h"
 #include "TGraph.h"
 #include "TH1.h"
-#include "TMath.h"
 
 #include <string>
 #include <unordered_map>
@@ -70,9 +69,8 @@ std::unordered_map<std::string, TH1D*> Fitters::Plotter::GetIndividualHists()
         TF1* f {};
         if(fModel->GetGammaFuncs().count(idx)) // if L dependence
         {
-            auto& lambdaL {fModel->GetGammaFuncs().at(idx)};
-            f = new TF1 {key.c_str(), [&lambdaL](double* x, double* p)
-                         { return p[0] * TMath::Voigt(x[0] - p[1], p[2], p[3] * lambdaL(x[0], p[1])); },
+            f = new TF1 {key.c_str(),
+                         [&](double* x, double* p) { return p[0] * (*fModel->GetConvObjs().at(idx))(x, nullptr); },
                          fData->GetXLow(), fData->GetXUp(), 4};
         }
         else // no L dependence

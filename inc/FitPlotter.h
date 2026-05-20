@@ -20,7 +20,10 @@ private:
     TFitResult* fRes {};
 
 public:
-    Plotter(Data* data, Model* model, TFitResult* res) : fData(data), fModel(model), fRes(res) {}
+    Plotter(Data* data, Model* model, TFitResult* res) : fData(data), fModel(model), fRes(res)
+    {
+        fModel->TriggerConvolution(fRes->Parameters().data(), fData->GetXLow(), fData->GetXUp());
+    }
 
     // Getters
     TGraph* GetGlobalFit();

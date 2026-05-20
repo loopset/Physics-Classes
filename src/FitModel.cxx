@@ -1,5 +1,7 @@
 #include "FitModel.h"
 
+#include "TF1.h"
+#include "TF1Convolution.h"
 #include "TMath.h"
 #include "TRegexp.h"
 #include "TSpline.h"
@@ -168,12 +170,24 @@ double Fitters::Model::EvalWithPacks(double x, ParPack& gaus, ParPack& voigt, Pa
     // 2-->Voigts
     for(int v = 0; v < fNVoigt; v++)
     {
-        auto gamma {voigt[v][3]};
         if(fGammaFuncs.count(v))
         {
-            gamma *= fGammaFuncs.at(v)(x, voigt[v][1]);
+            if(fConvObjs.count(v))
+            {
+                ret += voigt[v][0] * (*fConvObjs.at(v))(&x, nullptr);
+            }
+            else
+            {
+                throw std::runtime_error( // CAMBIAR ESTO
+                    "Model::EvalWithPacks(): gamma function exists for this Voigt but no convolution spline found. "
+                    "Please compute convolution splines before calling EvalWithPacks.");
+            }
         }
-        ret += voigt[v][0] * TMath::Voigt(x - voigt[v][1], voigt[v][2], gamma);
+        else
+        {
+            // Without penetrability, use standard Voigt from ROOT
+            ret += voigt[v][0] * TMath::Voigt(x - voigt[v][1], voigt[v][2], voigt[v][3]);
+        }
     }
     // 3-->Phase spaces
     for(int ps = 0; ps < fNPS; ps++)
@@ -215,44 +229,129 @@ void Fitters::Model::Print() const
     std::cout << "······························" << RESET << '\n';
 }
 
-Fitters::Model::GammaFunc Fitters::Model::InitGammaL(int l, double s, double mu, double R)
+Fitters::Model::GammaFunc Fitters::Model::InitLambda(int l, double s, double mu, double R)
 {
-    std::function<double(double, double)> ret;
+    // Define penetrability function based on l and parameters (expresion of Gamma in R-matrix theory without Gamma0
+    // parameter)
+    std::function<double(double, double)> penetrability;
     double hbar {197.3269804}; // MeV*fm
+    // x = Ex, mean = Er, s = separation energy, mu = reduced mass, R = channel radius
     if(l == 0)
     {
-        // Ex - s = Ed = decay energy, Er = resonance energy
-        ret = [hbar, s](double Ex, double Er) { return std::pow(std::abs(Ex - s) / Er, 0.5); };
+        // x - s = Ed = decay energy, mean = resonance energy
+        penetrability = [hbar, s](double x, double mean) { return std::pow((x - s) / mean, 0.5); };
     }
 
     else if(l == 1)
     {
-        ret = [hbar, s, mu, R](double Ex, double Er)
+        penetrability = [hbar, s, mu, R](double x, double mean)
         {
-            return std::pow(std::abs(Ex - s) / Er, 1.5) * (2 * std::abs(Ex - s) / (Er + std::abs(Ex - s))) *
-                   (1. + (2. * mu * Er * R * R) / (hbar * hbar)) / (1. + (2. * mu * std::abs(Ex - s) * R * R) / (hbar * hbar));
+            return std::pow((x - s) / mean, 1.5) * (2 * (x - s) / (mean + (x - s))) *
+                   (1. + (2. * mu * mean * R * R) / (hbar * hbar)) / (1. + (2. * mu * (x - s) * R * R) / (hbar * hbar));
         };
     }
 
     else if(l == 2)
     {
-        ret = [hbar, s, mu, R](double Ex, double Er)
+        penetrability = [hbar, s, mu, R](double x, double mean)
         {
-            return std::pow(std::abs(Ex - s) / Er, 2.5) * (2 * std::abs(Ex - s) / (Er + std::abs(Ex - s))) *
-                   (9. + (6. * mu * Er * R * R) / (hbar * hbar) + std::pow((2. * mu * Er * R * R) / (hbar * hbar), 2)) /
-                   (9. + (6. * mu * std::abs(Ex - s) * R * R) / (hbar * hbar) +
-                    std::pow((2. * mu * std::abs(Ex - s) * R * R) / (hbar * hbar), 2));
+            return std::pow((x - s) / mean, 2.5) * (2 * (x - s) / (mean + (x - s))) *
+                   (9. + (6. * mu * mean * R * R) / (hbar * hbar) +
+                    std::pow((2. * mu * mean * R * R) / (hbar * hbar), 2)) /
+                   (9. + (6. * mu * (x - s) * R * R) / (hbar * hbar) +
+                    std::pow((2. * mu * (x - s) * R * R) / (hbar * hbar), 2));
         };
     }
     else
     {
-        throw std::runtime_error("Model::InitGammaL(): currently only l = 0, 1, 2 are implemented");
+        throw std::runtime_error("Model::InitLambda(): currently only l = 0, 1, 2 are implemented");
     }
+    // Now with the Gamma defined, we return the Breit-Wirgner implementation (Lorentz formula)
+    // where x = Ex, mean = Er and Gamma0 is the width at resonance energy (Gamma(Er) = Gamma0)
+    auto ret {[penetrability, s](double x, double mean, double Gamma0)
+              {
+                  if(x <= s)
+                      return 0.0;
+                  double Gamma = Gamma0 * penetrability(x, mean);
+                  return Gamma * 0.159154943 / ((x - mean) * (x - mean) + Gamma * Gamma / 4);
+              }};
     return ret;
 }
 
 // s -> separation energy [MeV], mu -> reduced mass [MeV/c^2], R -> channel radius [fm]
-void Fitters::Model::AddGammaL(int vIdx, int l, double s, double mu, double R)
+void Fitters::Model::AddBWL(int vIdx, int l, double s, double mu, double R)
 {
-    fGammaFuncs[vIdx] = InitGammaL(l, s, mu, R);
+    fGammaFuncs[vIdx] = InitLambda(l, s, mu, R);
+}
+
+// Helper method to initialize or update Breit-Wigner function
+void Fitters::Model::InitOrUpdateBW(int vIdx, double mean, double Gamma0, double xMin, double xMax)
+{
+    if(!fBWs.count(vIdx))
+    {
+        // Create lambda for Breit-Wigner function compatible with TF1
+        auto bwLambda {[this, vIdx](double* x, double* p)
+                       {
+                           double mean {p[0]};
+                           double Gamma0 {p[1]};
+                           return this->fGammaFuncs.at(vIdx)(x[0], mean, Gamma0);
+                       }};
+
+        // Create TF1 object (2 parameters: mean and Gamma0)
+        fBWs[vIdx] = std::make_shared<TF1>(("fBW_v" + std::to_string(vIdx)).c_str(), bwLambda, xMin, xMax, 2);
+    }
+}
+
+// Helper method to initialize or update Gaussian function
+void Fitters::Model::InitOrUpdateGaussian(int vIdx, double sigma, double xMin, double xMax)
+{
+    if(!fGaussians.count(vIdx))
+    {
+        // Create TF1 object (1 parameter: sigma)
+        fGaussians[vIdx] = std::make_shared<TF1>(("fGauss_v" + std::to_string(vIdx)).c_str(),
+                                                 "TMath::Gaus(x, 0, [0], true)", xMin, xMax);
+    }
+}
+
+// Helper method to initialize or update Convolution function
+void Fitters::Model::InitOrUpdateConvolution(int vIdx, double mean, double sigma, double Gamma0, double xMin,
+                                             double xMax)
+{
+    // First ensure BW and Gaussian are initialized/updated
+    InitOrUpdateBW(vIdx, mean, Gamma0, xMin, xMax);
+    InitOrUpdateGaussian(vIdx, sigma, xMin, xMax);
+
+    if(!fConvObjs.count(vIdx))
+    {
+        // Create convolution object (only once)
+        fConvObjs[vIdx] = std::make_shared<TF1Convolution>(fBWs[vIdx].get(), fGaussians[vIdx].get());
+        fConvObjs[vIdx]->SetRange(xMin, xMax);
+        if(fNConvolutionPoints > 0)
+            fConvObjs[vIdx]->SetNofPointsFFT(fNConvolutionPoints);
+    }
+    // Update parameters: [0]=mean, [1]=Gamma0, [2]=sigma
+    fConvObjs[vIdx]->SetParameters(mean, Gamma0, sigma);
+}
+
+// Simplified ComputeConvolutionSplines - now uses cached TF1s directly
+void Fitters::Model::TriggerConvolution(const double* p, double xMin, double xMax)
+{
+    // Check if we have any gamma function, if not, no need to compute
+    if(fGammaFuncs.empty())
+        return;
+
+    // Unpack parameters (once per call)
+    auto pack {UnpackParameters(p)};
+    auto voigt {pack[1]};
+
+    for(const auto& [vIdx, gammaFunc] : fGammaFuncs)
+    {
+        double amplitude {voigt[vIdx][0]};
+        double mean {voigt[vIdx][1]};
+        double sigma {voigt[vIdx][2]};
+        double Gamma0 {voigt[vIdx][3]};
+
+        // Initialize or update the convolution TF1 with current parameters
+        InitOrUpdateConvolution(vIdx, mean, sigma, Gamma0, xMin, xMax);
+    }
 }

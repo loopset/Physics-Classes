@@ -32,6 +32,9 @@ double Fitters::Objective::DoEvalSigma(double nexp, double nfit) const
 
 double Fitters::Objective::DoEval(const double* p) const
 {
+    // Pre-compute convolution splines if needed (only for voigts with gamma funcs)
+    fModel->TriggerConvolution(p, fData->GetXLow(), fData->GetXUp());
+
     // Do a chi2 fit
     double res {};
     for(int i = 0, size = fData->GetSize(); i < size; i++)

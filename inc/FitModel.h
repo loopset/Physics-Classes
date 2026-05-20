@@ -1,6 +1,8 @@
 #ifndef FitModel_h
 #define FitModel_h
 
+#include "TF1.h"
+#include "TF1Convolution.h"
 #include "TH1.h"
 #include "TSpline.h"
 
@@ -21,7 +23,7 @@ class Model : public ROOT::Math::IParametricFunctionMultiDimTempl<double>
 public:
     typedef std::vector<std::vector<double>> ParPack;
     typedef std::vector<ParPack> ParVec;
-    using GammaFunc = std::function<double(double, double)>;
+    using GammaFunc = std::function<double(double, double, double)>;
 
 private:
     // PS data (by copied histograms)
@@ -45,6 +47,11 @@ private:
     std::vector<std::pair<std::string, unsigned int>> fChart;
     // Store penetrability functions for each voigt
     std::map<int, GammaFunc> fGammaFuncs {};
+    std::map<int, std::shared_ptr<TF1>> fGaussians {};
+    std::map<int, std::shared_ptr<TF1>> fBWs {};
+    std::map<int, std::shared_ptr<TF1Convolution>> fConvObjs;
+    // Number of points to compute convolution (integral) for each value of Ex
+    int fNConvolutionPoints {};
     // Configuration options
     bool fUseSpline {false};
 
@@ -72,6 +79,9 @@ public:
         ret->SetParameters(Parameters());
         ret->SetUseSpline(fUseSpline);
         ret->SetGammaFuncs(fGammaFuncs);
+        ret->SetBWs(fBWs);
+        ret->SetGaussians(fGaussians);
+        ret->SetConvObjs(fConvObjs);
         return ret;
     };
     bool HasGradient() const override { return false; }
@@ -90,9 +100,17 @@ public:
     void Print() const;
 
     // Add option to have penetrabilities
-    void AddGammaL(int vIdx, int l, double s, double mu, double R);
+    void AddBWL(int vIdx, int l, double s, double mu, double R);
     void SetGammaFuncs(const std::map<int, GammaFunc>& funcs) { fGammaFuncs = funcs; }
     const std::map<int, GammaFunc>& GetGammaFuncs() const { return fGammaFuncs; }
+    void SetBWs(const std::map<int, std::shared_ptr<TF1>>& bws) { fBWs = bws; }
+    const std::map<int, std::shared_ptr<TF1>>& GetBWs() const { return fBWs; }
+    void SetGaussians(const std::map<int, std::shared_ptr<TF1>>& gauss) { fGaussians = gauss; }
+    const std::map<int, std::shared_ptr<TF1>>& GetGaussians() const { return fGaussians; }
+    void SetConvObjs(const std::map<int, std::shared_ptr<TF1Convolution>>& convObjs) { fConvObjs = convObjs; }
+    const std::map<int, std::shared_ptr<TF1Convolution>>& GetConvObjs() const { return fConvObjs; }
+    // Function to evaluate manual convolution with Gaussian
+    void TriggerConvolution(const double* p, double xMin, double xMax);
 
 private:
     void InitSplines();
@@ -102,7 +120,11 @@ private:
     // Override of IBaseFunction
     double DoEvalPar(const double* x, const double* p) const override;
     // Function to initialize penetrability function for given l, s, mu and R
-    GammaFunc InitGammaL(int l, double s, double mu, double R);
+    GammaFunc InitLambda(int l, double s, double mu, double R);
+    // Helper methods
+    void InitOrUpdateBW(int vIdx, double mean, double Gamma0, double xMin, double xMax);
+    void InitOrUpdateGaussian(int vIdx, double sigma, double xMin, double xMax);
+    void InitOrUpdateConvolution(int vIdx, double mean, double sigma, double Gamma0, double xMin, double xMax);
 };
 } // namespace Fitters
 
