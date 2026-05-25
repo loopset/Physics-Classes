@@ -48,6 +48,7 @@ public:
     }
 
     void Print() const;
+    void GetFrescoOutput(int potIdx) const;
 };
 
 class Daehnick : public OMP

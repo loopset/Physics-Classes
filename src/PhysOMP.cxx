@@ -44,6 +44,28 @@ void PhysOMP::OMP::Print() const
     std::cout << "   awso : " << fawso << RESET << '\n';
 }
 
+void PhysOMP::OMP::GetFrescoOutput(int potIdx) const
+{
+    std::cout << BOLDCYAN << "····· FRESCO Input for " << fName << " ·····" << '\n';
+    std::cout << "! " << fName << " for: Target (A, Z) = (" << fA << ", " << fZ << ") + ";
+    std::cout << "Projectile (A, Z) = (" << fTargetA << ", " << fTargetZ << ") @ " << fEnergy << " MeV" << '\n';
+    
+    // Line 1: Coulomb
+    std::cout << "&pot kp=" << potIdx << " type=0 p(1:3)= " << fA << "  " << 0.000 << "  " << frc << " /" << '\n';
+    
+    // Line 2: Real volume + Imaginary volume
+    std::cout << "&pot kp=" << potIdx << " type=1 p(1:6)= " << fVr << "  " << frv << "  " << fav 
+              << "  " << fWv << "  " << frw << "  " << faw << " /" << '\n';
+    
+    // Line 3: Real surface + Imaginary surface
+    std::cout << "&pot kp=" << potIdx << " type=2 p(1:6)= " << 0.0000 << "  " << 0.0000 << "  " << 0.0000 
+              << "  " << fWs << "  " << frs << "  " << fas << " /" << '\n';
+    
+    // Line 4: Real SO + Imaginary SO
+    std::cout << "&pot kp=" << potIdx << " type=3 p(1:6)= " << fVso / 2.0 << "  " << frvso << "  " << favso
+              << "  " << fWso / 2.0 << "  " << frwso << "  " << fawso << " /" << RESET << '\n';
+}
+
 PhysOMP::Daehnick::Daehnick(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "Daehnick")
 {
     // Using option L in paper: NON-RELATIVISTIC KINEMATICS
