@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 
 void PhysOMP::OMP::Print() const
 {
@@ -50,6 +51,9 @@ void PhysOMP::OMP::GetFrescoOutput(int potIdx) const
     std::cout << "! " << fName << " for: Target (A, Z) = (" << fA << ", " << fZ << ") + ";
     std::cout << "Projectile (A, Z) = (" << fTargetA << ", " << fTargetZ << ") @ " << fEnergy << " MeV" << '\n';
     
+    // Fix precision to have 4 decimal numbers
+    std::cout << std::fixed << std::setprecision(4);
+
     // Line 1: Coulomb
     std::cout << "&pot kp=" << potIdx << " type=0 p(1:3)= " << fA << "  " << 0.000 << "  " << frc << " /" << '\n';
     
