@@ -3,8 +3,8 @@
 #include "PhysColors.h"
 
 #include <cmath>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 void PhysOMP::OMP::Print() const
 {
@@ -50,24 +50,24 @@ void PhysOMP::OMP::GetFrescoOutput(int potIdx) const
     std::cout << BOLDCYAN << "····· FRESCO Input for " << fName << " ·····" << '\n';
     std::cout << "! " << fName << " for: Target (A, Z) = (" << fA << ", " << fZ << ") + ";
     std::cout << "Projectile (A, Z) = (" << fTargetA << ", " << fTargetZ << ") @ " << fEnergy << " MeV" << '\n';
-    
+
     // Fix precision to have 4 decimal numbers
     std::cout << std::fixed << std::setprecision(4);
 
     // Line 1: Coulomb
     std::cout << "&pot kp=" << potIdx << " type=0 p(1:3)= " << fA << "  " << 0.000 << "  " << frc << " /" << '\n';
-    
+
     // Line 2: Real volume + Imaginary volume
-    std::cout << "&pot kp=" << potIdx << " type=1 p(1:6)= " << fVr << "  " << frv << "  " << fav 
-              << "  " << fWv << "  " << frw << "  " << faw << " /" << '\n';
-    
+    std::cout << "&pot kp=" << potIdx << " type=1 p(1:6)= " << fVr << "  " << frv << "  " << fav << "  " << fWv << "  "
+              << frw << "  " << faw << " /" << '\n';
+
     // Line 3: Real surface + Imaginary surface
-    std::cout << "&pot kp=" << potIdx << " type=2 p(1:6)= " << 0.0000 << "  " << 0.0000 << "  " << 0.0000 
-              << "  " << fWs << "  " << frs << "  " << fas << " /" << '\n';
-    
+    std::cout << "&pot kp=" << potIdx << " type=2 p(1:6)= " << 0.0000 << "  " << 0.0000 << "  " << 0.0000 << "  " << fWs
+              << "  " << frs << "  " << fas << " /" << '\n';
+
     // Line 4: Real SO + Imaginary SO
-    std::cout << "&pot kp=" << potIdx << " type=3 p(1:6)= " << fVso / 2.0 << "  " << frvso << "  " << favso
-              << "  " << fWso / 2.0 << "  " << frwso << "  " << fawso << " /" << RESET << '\n';
+    std::cout << "&pot kp=" << potIdx << " type=3 p(1:6)= " << fVso / 2.0 << "  " << frvso << "  " << favso << "  "
+              << fWso / 2.0 << "  " << frwso << "  " << fawso << " /" << RESET << '\n';
 }
 
 PhysOMP::Daehnick::Daehnick(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "Daehnick")
@@ -139,7 +139,8 @@ PhysOMP::DA1p::DA1p(int Z, int A, double energy) : OMP(Z, A, energy, 1, 2, "DA1p
         // Imaginary volume
         double Wv0 {0};
         double Wve {0};
-        fWv = Wv0 + Wve * (fEnergy - Ec);;
+        fWv = Wv0 + Wve * (fEnergy - Ec);
+        ;
         frw = 2.12 + (0.022 * (fEnergy - Ec)) * std::pow(fA, -1. / 3);
         faw = 0.261;
         // Imaginary surface
@@ -388,4 +389,44 @@ PhysOMP::BecchettiGreenless::BecchettiGreenless(int Z, int A, double energy)
     fVso = 6.2 * 2; // WARNING: l.sigma in paper
     frvso = 1.01;
     favso = 0.75;
+}
+
+PhysOMP::Watson::Watson(int Z, int A, double energy) : OMP(Z, A, energy, 1, 1, "Watson")
+{
+    // Energy of this parametrization is in CM
+    double eCM {fEnergy * fA / (fTargetA + fA)};
+    // Unique value for all the radii
+    double r = 1.15 - 0.001 * eCM;
+
+    // Coulomb
+    frc = r;
+
+    // 1-> Volume real (proton only, sign + in paper)
+    fVr = 60 - 0.3 * eCM + 0.4 * (fZ / std::pow(fA, 1. / 3)) + 27 * ((fN - fZ) / fA);
+    frv = r;
+    fav = 0.57;
+
+    // 2-> Volume imaginary
+    if(eCM < 32.7)
+        fWv = 0;
+    else if(32.7 <= eCM && eCM < 39.3)
+        fWv = (eCM - 32.7) * 1.15;
+    else
+        fWv = 7.5;
+    frw = r;
+    faw = 0.5;
+
+    // 3-> Surface imaginary
+    if(eCM < 13.8)
+        fWs = 0.64 * eCM;
+    else
+        fWs = 9.6 - 0.06 * eCM;
+    fWs = fWs + 10 * ((fN - fZ) / fA);
+    frs = r;
+    fas = 0.5;
+
+    // 4-> SO real
+    fVso = 5.5 * 2; // warning: l.sigma in paper
+    frvso = r;
+    favso = 0.57;
 }

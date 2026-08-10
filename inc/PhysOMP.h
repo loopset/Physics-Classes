@@ -104,6 +104,12 @@ class BecchettiGreenless : public OMP
 public:
     BecchettiGreenless(int Z, int A, double energy);
 };
+
+class Watson : public OMP
+{
+public:
+    Watson(int Z, int A, double energy);
+};
 } // namespace PhysOMP
 
 #endif
