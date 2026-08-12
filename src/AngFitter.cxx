@@ -233,6 +233,7 @@ void Angular::Fitter::Run(bool print)
         // Fit!
         runner.Fit(print, Angular::GetUseHessErrors());
         fRes.push_back(runner.GetFitResult());
+        fModels[i].TriggerConvolution(fRes.back().GetParams(), fData[i].GetXLow(), fData[i].GetXUp());
     }
     // Implicitly compute integrals
     ComputeIntegrals();
@@ -345,7 +346,17 @@ void Angular::Fitter::DoCounts(unsigned int iv, int nsigma)
     {
 
         std::string key {"v" + std::to_string(idx)};
-        auto f = new TF1("voigt", "[0] * TMath::Voigt(x - [1], [2], [3])", xmin, xmax);
+        TF1* f {};
+        if(fModels[iv].GetGammaFuncs().count(idx)) // L dependence -> convolution
+        {
+            auto* conv {fModels[iv].GetConvObjs().at(idx).get()};
+            f = new TF1 {key.c_str(), [conv](double* x, double* p) { return p[0] * (*conv)(x, nullptr); }, xmin, xmax,
+                         4};
+        }
+        else
+        {
+            f = new TF1("voigt", "[0] * TMath::Voigt(x - [1], [2], [3])", xmin, xmax);
+        }
         f->SetParameters(pars.data());
         fIgCounts[key].push_back(f->Integral(xmin, xmax) / fData[iv].GetBinWidth());
         // By sum
