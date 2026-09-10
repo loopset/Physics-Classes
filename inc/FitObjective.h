@@ -23,6 +23,8 @@ private:
     int fNdiv {20};
     // Use built-in ROOT integrator
     bool fUseIntegral {};
+    // Use log-likelihood instead of chi2 for minimization goal
+    bool fUseLogLikelihood {false};
 
 public:
     Objective() = default;
@@ -55,6 +57,10 @@ public:
 
 private:
     double DoEval(const double* p) const override;
+    double DoEvalChi2(const double* p) const;
+    double DoEvalLogLikelihood(const double* p) const;
+    double DoEvalPoissonNLL(double nobs, double nfit) const;
+
     double DoEvalWithIntegral(int i, const double* p) const;
     double DoEvalWithDivisions(double x, const double* p) const;
     double DoEvalSigma(double nexp, double nfit) const;

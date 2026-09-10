@@ -35,7 +35,12 @@ double Fitters::Objective::DoEval(const double* p) const
     // Pre-compute convolution splines if needed (only for voigts with gamma funcs)
     fModel->TriggerConvolution(p, fData->GetXLow(), fData->GetXUp());
 
-    // Do a chi2 fit
+    // Do chi2 by default, but can be changed to log-likelihood if needed
+    return fUseLogLikelihood ? DoEvalLogLikelihood(p) : DoEvalChi2(p);
+}
+
+double Fitters::Objective::DoEvalChi2(const double* p) const
+{
     double res {};
     for(int i = 0, size = fData->GetSize(); i < size; i++)
     {
@@ -48,14 +53,40 @@ double Fitters::Objective::DoEval(const double* p) const
             yfit = DoEvalWithDivisions(x, p);
         else
             yfit = (*fModel)(&x, p);
-        // Numerator of Chi2 func
         auto diff {yexp - yfit};
-        // Compute sigma
         auto sigma {DoEvalSigma(yexp, yfit)};
-        // Chi2 value!
         res += TMath::Power(diff / sigma, 2);
     }
     return res;
+}
+
+double Fitters::Objective::DoEvalLogLikelihood(const double* p) const
+{
+    double nll {}; // negative log-likelihood, minimization goal
+    for(int i = 0, size = fData->GetSize(); i < size; i++)
+    {
+        auto x {fData->GetX(i)};
+        auto nobs {fData->GetY(i)};
+        double nfit {};
+        if(fUseIntegral)
+            nfit = DoEvalWithIntegral(i, p);
+        else if(fUseDivisions)
+            nfit = DoEvalWithDivisions(x, p);
+        else
+            nfit = (*fModel)(&x, p);
+        nll += DoEvalPoissonNLL(nobs, nfit);
+    }
+    return nll;
+}
+
+double Fitters::Objective::DoEvalPoissonNLL(double nobs, double nfit) const
+{
+    // Avoid log(0)
+    static constexpr double kEpsilon {1e-12};
+    if(nfit < kEpsilon)
+        nfit = kEpsilon;
+    // Baker-Cousins formulation:
+    return nfit - nobs * TMath::Log(nfit) + TMath::LnGamma(nobs + 1);
 }
 
 double Fitters::Objective::DoEvalWithIntegral(int i, const double* p) const
@@ -92,6 +123,7 @@ double Fitters::Objective::DoEvalWithDivisions(double x, const double* p) const
 void Fitters::Objective::Print() const
 {
     std::cout << BOLDGREEN << "---- Objective func settings ----" << '\n';
+    std::cout << "-> Method       : " << (fUseLogLikelihood ? "LogLikelihood (Poisson)" : "Chi2") << '\n';
     std::cout << "-> UseDivisions ? " << std::boolalpha << fUseDivisions << '\n';
     std::cout << "-> Ndiv         : " << fNdiv << '\n';
     std::cout << "-> UseIntegral ? " << std::boolalpha << fUseIntegral << '\n';
