@@ -4,6 +4,7 @@
 #include "Math/IFunction.h"
 
 #include "FitData.h"
+#include "FitGlobals.h"
 #include "FitModel.h"
 
 #include <memory>
@@ -24,7 +25,8 @@ private:
     // Use built-in ROOT integrator
     bool fUseIntegral {};
     // Use log-likelihood instead of chi2 for minimization goal
-    bool fUseLogLikelihood {false};
+    // Managed through global variable. Default is false
+    bool fUseLogLikelihood {Fitters::GetIsLogL()};
 
 public:
     Objective() = default;
