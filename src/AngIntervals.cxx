@@ -107,7 +107,10 @@ void Angular::Intervals::TreatPS(int nsmooth, double scale, const std::set<int>&
         // By default set is empty so run for all
         if(which.size())
             if(which.find(idx) == which.end())
+            {
+                idx++;
                 continue;
+            }
         for(int i = 0; i < hps.size(); i++) // i = interval
         {
             Fitters::TreatPS(fHs[i], hps[i], nsmooth, scale);
