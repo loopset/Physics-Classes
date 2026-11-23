@@ -162,35 +162,68 @@ void Fitters::RunFit(TH1D* h, double exmin, double exmax, Fitters::Model& model,
     {
         auto* clone {(TH1D*)h->Clone()};
         clone->SetLineWidth(2);
-        clone->GetXaxis()->SetRangeUser(exmin, exmax);
         clone->SetStats(false);
-        // Model pointer
-        auto* ptr {model.Clone()};
-        // Wrap into TF1
-        auto* tf1 {new TF1 {"fitfunc", [=](double* x, double* p) { return (*ptr)(x, p); }, exmin, exmax,
-                            static_cast<int>(ptr->NPar())}};
-        tf1->SetParameters(res.Parameters().data());
-        tf1->SetNpx(2000);
-        // And append to funtion list
-        clone->GetListOfFunctions()->Clear();
-        clone->GetListOfFunctions()->Add(tf1);
-        // Results pointer just in case...
-        auto* rptr {new TFitResult {res}};
-        // And ratio plot now!
-        auto* ratio {new TRatioPlot {clone, "", rptr}};
-        ratio->SetH1DrawOpt("e");    // visualize errors for histogram
-        ratio->SetGraphDrawOpt("p"); // same for residuals
-        ratio->Draw();
-        ratio->GetLowerRefYaxis()->SetTitle("Residuals");
-        ratio->GetLowerRefYaxis()->SetLabelSize(0.5 * gStyle->GetLabelSize("Y"));
-        // std::cout << "Canvas : " << c << '\n';
-        // std::cout << "up : " << ratio->GetUpperPad() << '\n';
-        // std::cout << "low : " << ratio->GetLowerPad() << '\n';
-        // std::cout << "gPad : " << gPad << '\n';
-        // And draw the other things
-        ratio->GetUpperPad()->cd();
-        DrawGlobalFit(nullptr, hfits, leg, labels);
-        c->cd();
+        clone->GetXaxis()->SetRangeUser(exmin, exmax);
+
+        const bool hasConv {!model.GetGammaFuncs().empty()};
+        if(!hasConv)
+        {
+            // No convolutions: the copy stored inside TFitResult works, so use the standard fit residuals
+            auto* ptr {model.Clone()};
+            auto* tf1 {new TF1 {"fitfunc", [=](double* x, double* p) { return (*ptr)(x, p); }, exmin, exmax,
+                                static_cast<int>(ptr->NPar())}};
+            tf1->SetParameters(res.Parameters().data());
+            tf1->SetNpx(2000);
+            clone->GetListOfFunctions()->Clear();
+            clone->GetListOfFunctions()->Add(tf1);
+            auto* rptr {new TFitResult {res}};
+            auto* ratio {new TRatioPlot {clone, "", rptr}};
+            ratio->SetH1DrawOpt("e");
+            ratio->SetGraphDrawOpt("p");
+            ratio->Draw();
+            ratio->GetLowerRefYaxis()->SetTitle("Residuals");
+            ratio->GetLowerRefYaxis()->SetLabelSize(0.5 * gStyle->GetLabelSize("Y"));
+            // Up pad: the other things
+            ratio->GetUpperPad()->cd();
+            DrawGlobalFit(nullptr, hfits, leg, labels);
+            c->cd();
+        }
+        else
+        {
+            // With convolutions: TFitResult would evaluate an internal copy of the model without them.
+            // Build the fitted histogram by hand and use the two-histogram ratio plot instead
+            auto* ptr {model.Clone()};
+            ptr->TriggerConvolution(res.Parameters().data(), exmin, exmax);
+            const double* par {res.Parameters().data()};
+            auto* hfit {(TH1D*)h->Clone(TString::Format("hfitres%d", cCount - 1))};
+            hfit->Reset();
+            for(int b = 1; b <= hfit->GetNbinsX(); b++)
+            {
+                double x {hfit->GetBinCenter(b)};
+                if(x < exmin || x > exmax)
+                    continue;
+                hfit->SetBinContent(b, (*ptr)(&x, par));
+                hfit->SetBinError(b, 0.); // so "diffsig" divides only by the error of the data
+            }
+            hfit->GetXaxis()->SetRangeUser(exmin, exmax);
+            // Hide fit histogram, only used to compute residuals
+            hfit->SetLineColorAlpha(kWhite, 0.);
+            auto* ratio {new TRatioPlot {clone, hfit, "diffsig"}};
+            ratio->SetH1DrawOpt("e");
+            ratio->SetH2DrawOpt("hist");
+            ratio->SetGraphDrawOpt("p");
+            ratio->Draw();
+            ratio->GetLowerRefYaxis()->SetTitle("Residuals");
+            ratio->GetLowerRefYaxis()->SetLabelSize(0.5 * gStyle->GetLabelSize("Y"));
+            // Up pad: data and global fit
+            ratio->GetUpperPad()->cd();
+            leg->SetBorderSize(0);
+            leg->SetFillStyle(0);
+            leg->SetTextSize(0.045);
+            leg->AddEntry(clone, "Experimental", "le");
+            DrawGlobalFit(gfit, hfits, leg, labels);
+            c->cd();
+        }
     }
     // Save to file
     SaveGlobalFit(outfile, h, gfit, hfits, leg);
